@@ -1,0 +1,25 @@
+Restore Engineering Specification
+
+Purpose
+
+Restore Engine merupakan pasangan langsung dari Backup Engine dan bertanggung jawab mengembalikan sistem ke kondisi yang valid berdasarkan Backup yang dipilih pengguna. Proses Restore harus diperlakukan sebagai operasi berisiko tinggi karena dapat mengubah sebagian besar keadaan sistem. Oleh sebab itu seluruh proses wajib melalui validasi berlapis, verifikasi kompatibilitas versi, pemeriksaan integritas Backup, konfirmasi pengguna, serta pencatatan Audit secara menyeluruh. Restore harus mendukung beberapa mode seperti Full Restore, Configuration Restore, Workspace Restore, Database Restore, Plugin Restore, maupun Selective Restore sehingga pengguna tidak selalu harus memulihkan seluruh sistem. Sebelum Restore dimulai, Dashboard wajib menampilkan ringkasan isi Backup, ukuran, tanggal pembuatan, versi My Dash, komponen yang akan dipulihkan, serta dampak yang mungkin terjadi agar pengguna memahami konsekuensi tindakan yang akan dilakukan.
+
+Restore Workflow and Validation
+
+Siklus hidup Restore dimulai dari Backup Selection, Integrity Verification, Compatibility Check, Dependency Validation, Safety Confirmation, Snapshot Current State, Queue Registration, Execution, Verification, Notification, hingga Cleanup. Sebelum data dipulihkan, sistem sangat disarankan membuat Backup otomatis terhadap kondisi saat ini sehingga pengguna masih memiliki titik pemulihan apabila Restore menghasilkan keadaan yang tidak diinginkan. Seluruh komponen yang dipulihkan harus divalidasi satu per satu untuk memastikan struktur Database, konfigurasi Workspace, Rule, Notification, Automation, serta Metadata lainnya tetap konsisten. Apabila ditemukan komponen yang tidak kompatibel dengan versi saat ini, Engine harus memberikan pilihan untuk melewati komponen tersebut atau membatalkan proses Restore sepenuhnya sesuai kebijakan kompatibilitas yang telah ditentukan.
+
+Data Consistency, Rollback, and Recovery
+
+Restore tidak boleh meninggalkan sistem dalam keadaan setengah selesai. Seluruh perubahan yang memungkinkan harus dilakukan menggunakan Transaction atau mekanisme Rollback yang sesuai sehingga apabila proses gagal di tengah jalan, sistem dapat kembali ke keadaan sebelum Restore dimulai. Setelah seluruh data dipulihkan, Engine menjalankan proses Rebuild terhadap Cache Redis, Sinkronisasi Monitoring, Registrasi ulang WebSocket, Validasi Queue, Verifikasi Tunnel, serta pengecekan Health Score agar seluruh subsistem kembali bekerja menggunakan data terbaru. AI wajib memastikan bahwa Restore tidak menghasilkan Orphan Record, Konflik Primary Key, ataupun inkonsistensi konfigurasi yang dapat menyebabkan Dashboard gagal beroperasi setelah proses selesai.
+
+Monitoring, Notification, and User Experience
+
+Selama Restore berlangsung, Dashboard menampilkan Progress Realtime meliputi tahap yang sedang berjalan, persentase penyelesaian, estimasi waktu, jumlah komponen yang telah dipulihkan, serta Log singkat yang mudah dipahami. Seluruh perubahan Status dikirim melalui WebSocket sehingga pengguna tidak perlu memuat ulang halaman. Notification dikirim ketika Restore dimulai, berhasil, dibatalkan, ataupun gagal beserta penyebab utamanya. Seluruh aktivitas dicatat pada Audit Log lengkap dengan User, Workspace, Backup Source, Mode Restore, Durasi, serta hasil akhir proses. Dashboard juga harus memberikan peringatan apabila Restore dilakukan pada Workspace yang masih aktif atau ketika terdapat Automation yang sedang berjalan sehingga pengguna dapat mengambil keputusan yang tepat sebelum melanjutkan.
+
+Performance, Compatibility, and Extensibility
+
+Restore Engine harus mampu menangani Backup berukuran besar dengan penggunaan Resource yang tetap terkendali melalui Queue dan Worker khusus. Arsitektur Restore harus mendukung format Backup dari beberapa versi My Dash selama masih berada dalam rentang kompatibilitas yang telah ditentukan. Seluruh Driver Storage yang didukung Backup Engine juga harus dapat digunakan oleh Restore Engine tanpa perubahan pada Business Logic. AI wajib memastikan bahwa proses Restore mudah diperluas untuk mendukung komponen baru seperti Plugin tambahan, Storage eksternal, maupun layanan lain di masa depan tanpa memerlukan perubahan mendasar terhadap arsitektur inti.
+
+Acceptance Criteria
+
+Restore Engine dianggap memenuhi spesifikasi apabila mampu memulihkan sistem secara penuh maupun sebagian, melakukan validasi Backup dan kompatibilitas versi, menyediakan Snapshot sebelum Restore, mendukung Rollback, Recovery, Monitoring, Notification, Audit, serta memastikan seluruh subsistem kembali sinkron setelah proses selesai. Implementasi harus mengutamakan integritas data, keamanan pengguna, dan kemampuan pemulihan yang dapat dipercaya sehingga Restore benar-benar menjadi mekanisme terakhir yang aman ketika terjadi kegagalan sistem maupun kebutuhan migrasi.
