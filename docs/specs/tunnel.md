@@ -1,0 +1,25 @@
+Tunnel Management Engineering Specification
+
+Purpose
+
+Tunnel Management Engine bertanggung jawab menyediakan akses publik yang aman terhadap Dashboard My Dash tanpa mengharuskan pengguna memiliki Domain maupun IP publik. Sistem menggunakan pendekatan Multi Provider dengan Instatunnel sebagai Provider utama dan LocalTunnel sebagai Provider cadangan. Saat proses instalasi selesai, Engine melakukan deteksi koneksi Internet, memverifikasi instalasi Tunnel Client, melakukan autentikasi menggunakan API Token apabila diperlukan, kemudian membangun Tunnel secara otomatis. Setelah Tunnel aktif, Dashboard memperoleh URL publik yang langsung dapat digunakan pengguna untuk mengakses My Dash dari mana saja. Seluruh proses harus berlangsung otomatis tanpa konfigurasi manual, namun tetap menyediakan halaman pengaturan lanjutan bagi pengguna yang ingin mengubah Provider, Domain, ataupun parameter Tunnel. Apabila suatu Provider mengalami gangguan, sistem harus mampu berpindah ke Provider cadangan secara otomatis tanpa menghentikan layanan Dashboard lebih lama dari yang diperlukan.
+
+Provider Architecture and Connection Lifecycle
+
+Setiap Provider Tunnel diimplementasikan sebagai Driver yang memiliki antarmuka yang sama sehingga Core Engine tidak bergantung pada satu layanan tertentu. Driver bertanggung jawab melakukan Install, Authentication, Configuration, Connection, Health Check, URL Discovery, Renewal, Reconnection, dan Graceful Shutdown. Siklus hidup Tunnel dimulai dari Initialization, Environment Validation, Dependency Verification, Provider Selection, Connection Establishment, Public URL Verification, Continuous Monitoring, Automatic Recovery, hingga Cleanup ketika Tunnel dihentikan. Dashboard harus selalu mengetahui Provider yang sedang aktif, Status koneksi, Latency, Waktu aktif, Jumlah Reconnect, serta URL publik yang sedang digunakan. AI wajib memastikan bahwa perpindahan Provider tidak mengubah konfigurasi Dashboard maupun memerlukan Restart keseluruhan sistem.
+
+Monitoring, Recovery, and Failover Strategy
+
+Tunnel Engine melakukan Health Check secara berkala terhadap koneksi aktif menggunakan kombinasi Heartbeat lokal dan verifikasi akses URL publik. Apabila Health Check gagal beberapa kali berturut-turut, Engine menandai Tunnel sebagai Degraded, kemudian mencoba Reconnect menggunakan Exponential Backoff. Jika Reconnect tidak berhasil dalam batas yang telah ditentukan, sistem secara otomatis mengaktifkan Provider cadangan, memperbarui URL publik, mengirim Notification kepada pengguna, memperbarui Dashboard melalui WebSocket, serta menyimpan seluruh riwayat perpindahan Provider ke Audit Log. Ketika Provider utama kembali normal, pengguna dapat memilih tetap menggunakan Provider cadangan atau kembali ke Provider utama secara otomatis maupun manual sesuai konfigurasi. Tujuan utama Failover adalah menjaga Availability Dashboard tetap tinggi tanpa memerlukan campur tangan pengguna.
+
+Configuration, Security, and User Experience
+
+Seluruh konfigurasi Tunnel dapat diubah melalui halaman Settings yang menyediakan pilihan Provider, Mode Failover, Interval Health Check, Retry Limit, Timeout, Auto Reconnect, Auto Failback, serta kebijakan Notification. API Token, Credential, maupun konfigurasi sensitif disimpan secara aman dan tidak pernah dikirim ke Frontend maupun layanan AI. Dashboard menampilkan informasi lengkap seperti URL publik aktif, Status Tunnel, Lokasi Provider apabila tersedia, Riwayat Disconnect, Total Downtime, Average Reconnect Time, serta grafik Availability. Pengguna juga dapat menyalin URL, memperbarui Tunnel secara manual, atau memulai ulang koneksi hanya dengan satu tindakan tanpa harus membuka Terminal VPS.
+
+Performance, Extensibility, and Future Compatibility
+
+Tunnel Engine harus menggunakan Resource yang rendah serta mampu berjalan terus-menerus tanpa Memory Leak maupun penurunan performa. Seluruh proses koneksi dan pemantauan berjalan pada Worker terpisah sehingga tidak mengganggu Monitoring ataupun Dashboard utama. Arsitektur Driver memungkinkan penambahan Provider baru seperti Cloudflare Tunnel, Tailscale, Ngrok, atau layanan lain di masa depan tanpa mengubah Core Engine. AI wajib memastikan bahwa seluruh Provider mengikuti kontrak yang sama sehingga Dashboard dapat menampilkan informasi secara konsisten apa pun layanan yang digunakan. Integrasi dengan Notification, Analytics, Automation, dan Health Score harus dilakukan melalui Event Bus sehingga setiap perubahan Status Tunnel langsung memengaruhi seluruh subsistem yang berkaitan.
+
+Acceptance Criteria
+
+Tunnel Management dianggap memenuhi spesifikasi apabila mampu mengelola beberapa Provider melalui arsitektur Driver, melakukan koneksi otomatis, memantau kesehatan Tunnel secara Realtime, mendukung Reconnect, Failover, Failback, Notification, Audit, serta Monitoring yang lengkap. Dashboard harus selalu menampilkan URL publik yang valid, mampu berpindah Provider tanpa mengganggu pengguna secara signifikan, menjaga keamanan Credential, serta menyediakan pengalaman penggunaan yang sederhana meskipun proses pengelolaan Tunnel di belakang layar cukup kompleks.
