@@ -1,0 +1,25 @@
+User Interface Engineering Specification
+
+Purpose
+
+User Interface My Dash dirancang sebagai Dashboard operasional profesional yang digunakan dalam waktu lama oleh Administrator VPS, sehingga prioritas utamanya adalah keterbacaan, efisiensi, konsistensi, dan kecepatan memahami informasi. Tampilan menggunakan konsep Modern Dark tanpa Gradient berlebihan, tanpa Glass Effect berlapis, tanpa Shadow berlebihan, serta mengutamakan warna hitam yang tidak pekat dipadukan dengan biru tua yang lembut sebagai warna aksen. Seluruh halaman menggunakan Grid yang konsisten, Radius yang seragam, Animasi halus dengan durasi pendek, serta ukuran komponen yang ringkas agar sebanyak mungkin informasi dapat ditampilkan tanpa membuat pengguna merasa penuh atau sesak. Dashboard harus sepenuhnya Mobile First namun tetap memanfaatkan ruang layar Desktop secara optimal. Seluruh perubahan Status, Grafik, Progress, maupun Notification harus menggunakan animasi yang halus agar pengguna dapat langsung memahami perubahan tanpa kehilangan fokus.
+
+Layout and Navigation Architecture
+
+Struktur antarmuka dibagi menjadi beberapa area utama yaitu Sidebar Navigation, Top Navigation, Workspace Selector, Notification Center, Main Content Area, Floating Status Indicator, serta Footer Information. Sidebar dapat diperkecil menjadi Mode Compact sehingga memberikan ruang lebih besar bagi Dashboard pada layar kecil. Seluruh halaman menggunakan pola Layout yang sama sehingga pengguna tidak perlu mempelajari ulang setiap kali berpindah menu. Dashboard utama terdiri dari Widget Overview, Health Score, Resource Monitoring, Tunnel Status, Notification Summary, Analytics Ringkas, Queue Status, Backup Status, GitHub Integration, Docker Overview, serta aktivitas terbaru. Halaman lain seperti Monitoring, Analytics, Notification, Automation, Settings, Backup, Restore, Audit, dan About mengikuti prinsip desain yang sama agar pengalaman pengguna tetap konsisten di seluruh aplikasi.
+
+Component Behavior and Interaction
+
+Seluruh komponen antarmuka harus memiliki perilaku yang dapat diprediksi. Tombol selalu memberikan Feedback ketika ditekan, Form menampilkan Validasi secara langsung, Dialog tidak menghalangi informasi penting, sedangkan Loading menggunakan Skeleton Screen dibanding Spinner apabila proses diperkirakan memerlukan waktu lebih dari sesaat. Grafik harus dapat diperbesar, difilter, diekspor, dan diperbarui secara Realtime melalui WebSocket tanpa mengganggu interaksi pengguna. Notification muncul sebagai Toast ringan untuk informasi singkat, sedangkan kejadian penting juga disimpan pada Notification Center. Seluruh Widget dapat di-refresh secara otomatis, mendukung Empty State yang informatif, Error State yang jelas, serta Realtime State ketika sedang menerima pembaruan dari sistem.
+
+Responsive Design and Accessibility
+
+Seluruh halaman harus berfungsi dengan baik mulai dari perangkat Mobile, Tablet, Laptop, hingga Monitor beresolusi tinggi. Grid otomatis menyesuaikan jumlah kolom berdasarkan ukuran layar tanpa memotong informasi penting. Font tetap mudah dibaca pada seluruh resolusi, tombol memiliki ukuran sentuh yang nyaman, serta seluruh ikon memiliki arti yang konsisten di seluruh aplikasi. Dashboard juga harus mendukung navigasi menggunakan Keyboard, Focus Indicator yang jelas, Kontras warna yang baik, serta Label yang dapat dipahami oleh teknologi aksesibilitas. AI wajib memastikan bahwa tidak ada halaman yang memerlukan Zoom horizontal pada perangkat Mobile dan seluruh komponen tetap dapat digunakan walaupun koneksi Internet tidak stabil.
+
+Animation, Performance, and User Experience
+
+Animasi hanya digunakan untuk membantu pengguna memahami perubahan Status, bukan sebagai dekorasi. Transisi antar halaman harus cepat dan halus, Widget Realtime menggunakan perubahan bertahap tanpa berkedip, sedangkan Grafik diperbarui menggunakan interpolasi ringan agar data terasa hidup namun tetap nyaman dilihat. Dashboard harus menghindari Re-render yang tidak diperlukan, memanfaatkan Lazy Loading untuk halaman yang jarang dibuka, serta menjaga penggunaan CPU Browser tetap rendah walaupun Monitoring berlangsung secara terus-menerus. Pengguna harus selalu mengetahui apa yang sedang terjadi melalui indikator Progress, Status, Notification, maupun perubahan warna yang konsisten tanpa harus membaca Log secara manual.
+
+Acceptance Criteria
+
+User Interface dianggap memenuhi spesifikasi apabila seluruh halaman memiliki desain yang konsisten, Mobile First, Modern Dark tanpa Gradient berlebihan, mendukung Realtime Update, animasi yang halus, Widget yang ringkas, aksesibilitas yang baik, serta performa yang tetap responsif pada berbagai ukuran layar. Seluruh komponen harus mudah dipahami oleh pengguna baru maupun Administrator berpengalaman, mampu menampilkan informasi kompleks secara sederhana, serta mendukung perkembangan fitur My Dash di masa depan tanpa mengubah prinsip desain utama yang telah ditetapkan.
