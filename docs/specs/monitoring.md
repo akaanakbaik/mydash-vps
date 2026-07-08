@@ -1,0 +1,25 @@
+Monitoring Engine Engineering Specification
+
+Purpose
+
+Monitoring Engine merupakan subsistem paling penting pada My Dash karena hampir seluruh fitur bergantung pada data yang dihasilkannya. Dashboard, Analytics, Notification, Automation, Health Score, AI Recommendation, Audit, hingga Backup Scheduler menggunakan informasi yang berasal dari Monitoring Engine. Oleh karena itu Monitoring harus menjadi Single Source of Operational Metrics. Seluruh informasi dikumpulkan melalui Collector yang ringan, divalidasi, dinormalisasi, diklasifikasikan, kemudian dipublikasikan sebagai Event kepada Domain lain. Monitoring tidak diperbolehkan melakukan analisis bisnis, mengirim Notification, ataupun menjalankan Automation secara langsung karena tanggung jawabnya hanya memastikan bahwa seluruh kondisi VPS berhasil diamati secara akurat dan Realtime. Seluruh proses pengumpulan data harus menggunakan Resource sekecil mungkin agar Monitoring tidak justru menjadi penyebab meningkatnya penggunaan CPU maupun RAM pada VPS.
+
+Collector Architecture
+
+Monitoring menggunakan pendekatan Modular Collector sehingga setiap jenis Resource dipantau oleh Collector yang berbeda. Minimal harus tersedia Collector untuk CPU, Memory, Swap, Disk Usage, Filesystem, Disk I/O, Network Interface, Bandwidth, Temperature apabila tersedia, Operating System, Kernel, Uptime, Process, Service, Docker Container, Tunnel Provider, PostgreSQL, Redis, GitHub Runner, WebSocket, Queue, Notification Worker, Automation Worker, AI Worker, serta Collector khusus Plugin apabila Plugin tersebut menyediakan Metric tambahan. Setiap Collector berjalan secara independen dengan interval yang dapat dikonfigurasi. Kegagalan satu Collector tidak boleh menghentikan Collector lain. AI juga harus mendukung penambahan Collector baru melalui Plugin tanpa perlu mengubah Monitoring Core sehingga sistem dapat berkembang di masa depan.
+
+Sampling, Validation, and Processing
+
+Setiap Metric memiliki karakteristik yang berbeda sehingga Sampling Rate tidak boleh disamakan. CPU dapat diambil setiap satu detik, Memory setiap dua detik, Disk setiap lima detik, sedangkan informasi Kernel atau Hardware cukup diperbarui ketika Startup atau setelah perubahan konfigurasi. Setelah Metric diperoleh, sistem melakukan Validation untuk memastikan nilai berada pada rentang yang benar, tidak mengandung NaN, Infinity, Timestamp yang tidak valid, maupun Unit yang salah. Data kemudian dinormalisasi agar seluruh Domain menerima format yang sama tanpa perlu mengetahui sumber aslinya. Monitoring juga menerapkan Moving Average, Exponential Moving Average, Outlier Detection, Trend Detection, serta Confidence Calculation sehingga Dashboard tidak menampilkan perubahan yang terlalu berisik dan Notification tidak menghasilkan False Alert akibat Spike sesaat.
+
+Realtime Distribution and Storage
+
+Metric yang telah divalidasi diteruskan ke beberapa tujuan secara bersamaan. Realtime Cache di Redis menyimpan kondisi terbaru untuk Dashboard, PostgreSQL menyimpan data historis sesuai Retention Policy, Event Bus mendistribusikan perubahan kepada Analytics, Notification, Automation, dan Health Score Engine, sedangkan WebSocket Gateway mengirimkan pembaruan instan kepada Client yang telah berlangganan Channel terkait. Monitoring tidak melakukan Query berulang terhadap Database untuk memperoleh data yang baru saja dikumpulkan karena seluruh distribusi menggunakan Event. AI wajib memastikan bahwa satu Metric hanya diproses satu kali kemudian digunakan kembali oleh seluruh Domain sehingga penggunaan CPU, RAM, dan I/O tetap efisien walaupun jumlah Collector terus bertambah.
+
+Reliability, Recovery, and Scalability
+
+Monitoring harus mampu beroperasi selama berbulan-bulan tanpa Memory Leak maupun penurunan performa. Apabila Collector gagal membaca Resource tertentu, sistem harus mencatat Error, menurunkan Confidence Score, kemudian mencoba Recovery menggunakan Retry bertingkat tanpa menghentikan Collector lain. Seluruh Collector wajib dipantau menggunakan Health Check internal yang mengukur Latency, Error Rate, Processing Time, Success Ratio, Queue Length, dan Throughput. Monitoring juga harus mampu menangani penambahan Server hanya dengan menambah Workspace atau Collector tanpa mengubah arsitektur utama. Seluruh proses harus tetap deterministik, mudah diuji, serta menghasilkan Metric yang identik apabila diberikan Input yang sama sehingga AI maupun pengguna dapat mempercayai seluruh data operasional yang ditampilkan Dashboard.
+
+Acceptance Criteria
+
+Monitoring Engine dianggap memenuhi spesifikasi apabila seluruh Resource VPS dipantau menggunakan Collector modular, seluruh Metric melewati Validation, Normalization, Trend Analysis, Outlier Detection, dan Confidence Calculation sebelum didistribusikan, seluruh Domain menerima data melalui Event tanpa melakukan pengumpulan ulang, serta sistem mampu melakukan Recovery otomatis ketika sebagian Collector gagal. Monitoring juga harus mempertahankan penggunaan Resource yang rendah, mendukung Plugin, mudah diskalakan, dan menjadi satu-satunya sumber data operasional yang dipercaya oleh seluruh ekosistem My Dash.
