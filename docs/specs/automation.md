@@ -1,0 +1,25 @@
+Automation Engine Engineering Specification
+
+Purpose
+
+Automation Engine merupakan subsistem yang bertugas mengambil tindakan secara otomatis berdasarkan Event, Rule, Schedule, maupun kondisi tertentu tanpa memerlukan intervensi pengguna. Tujuan utama Automation bukan menggantikan Administrator, melainkan mengurangi pekerjaan berulang, mempercepat proses Recovery, serta mencegah masalah berkembang menjadi kegagalan yang lebih besar. Automation harus mampu menjalankan Restart Service, Restart Docker Container, Membersihkan Cache, Menghapus File Sementara, Menjalankan Backup, Melakukan Sinkronisasi GitHub, Memulai atau Menghentikan Tunnel, Mengaktifkan Mode Maintenance, Menjalankan Bash Script yang telah diverifikasi, Mengirim Webhook, Mengubah Konfigurasi tertentu, maupun Workflow lain yang diizinkan pengguna. Seluruh Automation harus berasal dari Rule yang jelas dan dapat diaudit, sehingga setiap tindakan yang dilakukan sistem selalu memiliki alasan yang dapat dijelaskan kembali kepada pengguna.
+
+Rule Engine and Execution Flow
+
+Automation menggunakan Rule Engine yang terdiri dari Trigger, Condition, Validation, Action, Verification, dan Recovery. Trigger dapat berasal dari Event Monitoring, Health Score, Notification, Scheduler, Webhook, GitHub Action, ataupun permintaan manual dari pengguna. Condition memungkinkan pengguna menggabungkan beberapa syarat, misalnya CPU di atas delapan puluh lima persen selama lima menit dan Memory di atas sembilan puluh persen, baru kemudian Action dijalankan. Sebelum Action dieksekusi, Engine memeriksa Permission, Cooldown, Lock, Dependency, Workspace, serta Status Server agar tidak terjadi Automation ganda ataupun konflik antar Workflow. Setelah Action selesai, Engine melakukan Verification untuk memastikan tujuan benar-benar tercapai. Apabila gagal, Engine menjalankan Retry atau Workflow Recovery sesuai konfigurasi.
+
+Workflow, Scheduling, and Dependency
+
+Automation mendukung Workflow sederhana maupun kompleks yang terdiri dari banyak langkah. Sebagai contoh, ketika Tunnel utama gagal maka sistem mencoba Restart Tunnel, melakukan Health Check, beralih ke LocalTunnel apabila gagal, memperbarui Dashboard, mengirim Notification, kemudian menjalankan Verification terhadap URL baru sebelum Workflow dianggap selesai. Setiap Workflow dapat memiliki Delay, Timeout, Retry, Dependency, Branching, Parallel Execution, maupun Conditional Execution. Selain Event Driven Automation, sistem juga mendukung Scheduler untuk menjalankan Backup harian, Cleanup mingguan, Sinkronisasi GitHub berkala, Pemeriksaan Disk, Verifikasi Integritas Database, serta tugas rutin lainnya. Scheduler harus mempertimbangkan Zona Waktu Workspace namun seluruh penyimpanan waktu tetap menggunakan UTC.
+
+Safety, Security, and Reliability
+
+Automation memiliki hak akses yang tinggi sehingga seluruh Workflow harus melewati mekanisme keamanan yang ketat. Action berbahaya seperti menjalankan Bash Script, menghapus file, mematikan Service, ataupun mengubah konfigurasi sistem hanya dapat dilakukan apabila pengguna telah memberikan persetujuan pada saat instalasi atau melalui halaman Settings dengan Permission yang sesuai. AI tidak diperbolehkan membuat Automation yang menjalankan perintah dari sumber yang tidak dipercaya. Seluruh Action memiliki Timeout, Retry Limit, Rollback apabila memungkinkan, Audit Log, serta Correlation ID sehingga setiap langkah dapat ditelusuri kembali. Engine juga harus mencegah Infinite Loop, Recursive Workflow, Race Condition, dan Automation Storm yang dapat menyebabkan VPS menjalankan Action yang sama secara terus-menerus.
+
+Performance, Monitoring, and Extensibility
+
+Automation Engine berjalan menggunakan Worker terpisah sehingga tidak mengganggu Dashboard maupun Monitoring. Seluruh Workflow diproses melalui Queue berdasarkan Prioritas, sementara Dashboard menampilkan Status Realtime seperti Pending, Running, Waiting, Success, Failed, Cancelled, ataupun Rolled Back. AI wajib memantau Queue Length, Average Execution Time, Success Rate, Failure Rate, Retry Count, Recovery Success Ratio, serta Resource Usage Automation Worker. Arsitektur harus memungkinkan Plugin menambahkan Trigger maupun Action baru tanpa mengubah Core Engine, sehingga My Dash dapat terus berkembang sesuai kebutuhan pengguna. Tujuan akhirnya adalah membangun sistem Automation yang aman, dapat diprediksi, mudah diuji, dan mampu mengurangi pekerjaan manual Administrator secara signifikan.
+
+Acceptance Criteria
+
+Automation Engine dianggap memenuhi spesifikasi apabila mampu menjalankan Workflow berbasis Event maupun Scheduler, mendukung Trigger, Condition, Action, Verification, Retry, Rollback, Queue, Audit, Permission, serta Monitoring secara menyeluruh. Seluruh Automation harus dapat dikonfigurasi pengguna, tidak menimbulkan konflik antar Workflow, memiliki mekanisme Recovery yang jelas, serta mampu beroperasi secara stabil pada lingkungan produksi tanpa mengurangi keamanan maupun integritas sistem My Dash.
