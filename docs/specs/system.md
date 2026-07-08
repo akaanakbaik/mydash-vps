@@ -1,0 +1,25 @@
+System Core Engineering Specification
+
+Purpose
+
+System Core merupakan fondasi utama seluruh ekosistem My Dash dan bertanggung jawab mengoordinasikan seluruh Domain agar bekerja sebagai satu kesatuan yang konsisten. Core bukan tempat implementasi fitur bisnis, melainkan lapisan yang mengatur Lifecycle aplikasi, Dependency Injection, Configuration Management, Service Discovery, Module Registration, Event Bootstrap, Worker Initialization, Shutdown Procedure, Error Handling, serta koordinasi antar subsistem. Seluruh Domain seperti Monitoring, Analytics, Queue, Notification, Automation, GitHub, Tunnel, Docker, AI, Backup, maupun Plugin harus bergantung pada kontrak yang disediakan System Core, bukan saling bergantung secara langsung. Dengan pendekatan ini setiap Domain dapat dikembangkan, diuji, maupun diganti implementasinya tanpa mengubah fondasi keseluruhan aplikasi. System Core juga menjadi satu-satunya tempat yang mengetahui urutan Startup dan Shutdown seluruh layanan sehingga proses inisialisasi selalu berlangsung deterministik.
+
+Startup, Dependency Management, and Service Lifecycle
+
+Ketika aplikasi dijalankan, System Core mengikuti urutan yang tetap yaitu Environment Validation, Configuration Loading, Secret Verification, Logger Initialization, Database Connection, Redis Connection, Event Bus Initialization, Queue Initialization, Service Registration, Worker Initialization, Monitoring Bootstrap, Scheduler Startup, Plugin Loading, Tunnel Initialization, WebSocket Gateway Startup, REST API Startup, Health Verification, kemudian Application Ready. Setiap Service memiliki Status seperti Initializing, Ready, Degraded, Recovering, Stopping, maupun Offline. Sebelum suatu Domain digunakan oleh Domain lain, Core memastikan seluruh Dependency yang diwajibkan telah berada pada Status Ready. Pada saat Shutdown, proses dilakukan dengan urutan terbalik agar Queue dapat menyelesaikan pekerjaan yang masih berjalan, WebSocket menutup koneksi secara Graceful, Worker menyimpan Status terakhir, dan seluruh Resource dibebaskan tanpa menyebabkan Data Corruption.
+
+Configuration, Environment, and State Management
+
+Seluruh konfigurasi sistem berasal dari Configuration Service dan Environment Variable yang telah divalidasi. Tidak diperbolehkan membaca Environment secara langsung dari berbagai bagian aplikasi karena dapat menghasilkan inkonsistensi dan menyulitkan pengujian. Configuration memiliki Version, Schema, Default Value, Validation Rule, serta mekanisme Reload apabila perubahan tertentu tidak memerlukan Restart aplikasi. State global hanya disimpan pada Domain yang memang bertanggung jawab terhadap State tersebut, sedangkan System Core hanya menyimpan informasi mengenai Status Service, Dependency, Lifecycle, dan Health keseluruhan aplikasi. AI wajib memastikan bahwa seluruh Domain memperoleh konfigurasi melalui kontrak yang sama sehingga perubahan pada Configuration Service tidak memerlukan modifikasi besar di Domain lain.
+
+Failure Management, Recovery, and Observability
+
+System Core bertanggung jawab mendeteksi kegagalan setiap Domain melalui Health Check berkala. Apabila suatu Service berubah menjadi Degraded atau Offline, Core menentukan apakah Service perlu direstart, dipindahkan ke Recovery Mode, atau hanya menghasilkan Notification kepada Administrator. Core juga mengumpulkan Health seluruh Domain menjadi Overall System Health yang ditampilkan pada Dashboard. Seluruh perubahan Status menghasilkan Event, Logging, dan Audit sehingga perjalanan setiap Service dapat dianalisis kembali. AI wajib memastikan bahwa kegagalan satu Domain tidak menyebabkan keseluruhan aplikasi berhenti bekerja kecuali Domain tersebut memang merupakan ketergantungan absolut yang tidak memiliki mekanisme degradasi.
+
+Scalability, Maintainability, and Future Evolution
+
+Arsitektur System Core harus mendukung penambahan Domain baru tanpa memerlukan perubahan pada Domain yang telah ada. Seluruh komunikasi menggunakan Interface, Service Registry, Event Bus, dan Dependency Injection sehingga Coupling antar modul tetap rendah. Core juga harus mendukung mode pengembangan, pengujian, dan produksi dengan konfigurasi yang berbeda namun menggunakan alur Startup yang sama. AI wajib menjaga agar ukuran Core tetap kecil, tidak menyimpan Business Logic, serta hanya berfungsi sebagai Orchestrator dan Lifecycle Manager. Dengan pendekatan ini My Dash dapat berkembang menjadi sistem yang jauh lebih besar tanpa kehilangan keteraturan arsitektur maupun kemudahan pemeliharaan.
+
+Acceptance Criteria
+
+System Core dianggap memenuhi spesifikasi apabila mampu mengelola Startup, Shutdown, Dependency, Configuration, Lifecycle, Health, Recovery, Service Registration, serta koordinasi seluruh Domain menggunakan kontrak yang konsisten. Implementasi harus menjaga isolasi antar modul, memungkinkan penambahan Domain baru dengan perubahan minimal, serta memastikan bahwa seluruh subsistem My Dash dapat bekerja sebagai satu platform yang stabil, dapat diamati, dan mudah dikembangkan dalam jangka panjang.
