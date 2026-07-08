@@ -1,0 +1,25 @@
+Analytics Engine Engineering Specification
+
+Purpose
+
+Analytics Engine bertugas mengubah jutaan Metric mentah yang dihasilkan Monitoring menjadi informasi yang mudah dipahami, dapat dibandingkan, dan dapat dijadikan dasar pengambilan keputusan. Berbeda dengan Monitoring yang hanya mengumpulkan kondisi sistem saat ini, Analytics bertanggung jawab menemukan pola, tren, anomali, hubungan antar Resource, prediksi penggunaan, efisiensi sistem, hingga rekomendasi optimasi. Analytics harus mampu menjawab pertanyaan seperti mengapa CPU meningkat, kapan penggunaan Disk mulai memburuk, apakah RAM mengalami Memory Leak, bagaimana performa VPS dalam tujuh hari terakhir, seberapa stabil Tunnel, berapa Availability Server, dan apakah performa VPS mengalami peningkatan atau penurunan dibanding periode sebelumnya. Analytics tidak boleh membaca sistem operasi secara langsung, tetapi hanya memproses Event dan Metric yang telah divalidasi oleh Monitoring Engine sehingga seluruh hasil analisis tetap konsisten.
+
+Data Processing and Analytical Model
+
+Analytics menggunakan kombinasi Time Series Processing, Sliding Window, Historical Aggregation, Trend Analysis, Correlation Analysis, serta Statistical Summary. Seluruh data diproses secara bertahap mulai dari Raw Metric, Minute Summary, Hourly Summary, Daily Summary, Weekly Summary, hingga Monthly Summary untuk mengurangi ukuran penyimpanan sekaligus mempercepat Query. Dashboard harus mampu berpindah dari grafik satu jam ke satu tahun tanpa melakukan Query terhadap seluruh Raw Metric. AI wajib menghitung Average, Minimum, Maximum, Median, Percentile, Standard Deviation, Growth Rate, Moving Average, Peak Usage, Idle Ratio, Resource Efficiency Index, Availability Percentage, dan berbagai indikator statistik lainnya sehingga pengguna memperoleh gambaran menyeluruh mengenai kondisi VPS, bukan sekadar angka sesaat.
+
+Correlation, Prediction, and Recommendation
+
+Analytics harus mampu menemukan hubungan antar Resource. Sebagai contoh, kenaikan CPU yang selalu diikuti peningkatan Disk I/O dapat mengindikasikan proses kompilasi, sedangkan kenaikan RAM yang terus berlangsung tanpa pernah turun dapat mengindikasikan Memory Leak. Korelasi dihitung menggunakan pendekatan statistik sederhana sebelum AI memberikan analisis tambahan. Prediction dasar menggunakan data historis untuk memperkirakan kapan Disk akan penuh, kapan Bandwidth akan habis, atau kapan Resource mulai mendekati Threshold yang telah ditentukan pengguna. AI hanya digunakan untuk menjelaskan hasil analisis, memberikan Diagnosis yang lebih mudah dipahami, serta menyusun rekomendasi optimasi apabila berhasil merespons dalam batas waktu yang telah ditentukan. Apabila AI gagal, seluruh Analytics tetap harus berjalan menggunakan algoritma lokal.
+
+Dashboard Integration and Visualization
+
+Analytics menyediakan data yang telah dipersiapkan khusus untuk Dashboard sehingga Frontend tidak perlu melakukan perhitungan yang berat. Setiap Widget hanya menerima informasi yang memang diperlukan beserta Metadata seperti Trend, Confidence, Delta, Growth, Prediction, dan Severity. Grafik harus mendukung Zoom, Filter, Comparison, Aggregation, Export, serta Realtime Update melalui WebSocket tanpa memuat ulang seluruh halaman. Analytics juga harus mendukung perbandingan antar periode, misalnya hari ini dibanding kemarin, minggu ini dibanding minggu lalu, atau bulan ini dibanding bulan sebelumnya sehingga pengguna dapat melihat perkembangan performa VPS secara objektif. Seluruh visualisasi harus tetap ringan walaupun jumlah data historis mencapai jutaan Record.
+
+Performance, Retention, and Reliability
+
+Analytics tidak boleh menjalankan Query berat setiap kali Dashboard dibuka. Sebagian besar hasil analisis harus dihitung di belakang layar menggunakan Worker terpisah kemudian disimpan sebagai Aggregated Data yang siap digunakan kapan saja. Data lama mengikuti Retention Policy sehingga ukuran Database tetap terkendali. Seluruh proses Analytics harus dapat dihentikan, dilanjutkan, ataupun dijalankan ulang tanpa menghasilkan inkonsistensi data. AI wajib memantau Processing Time, Queue Length, Cache Hit Ratio, Aggregation Delay, Prediction Accuracy, serta Resource Consumption Analytics Engine agar proses analisis tidak mengganggu Monitoring maupun layanan utama lainnya. Tujuan akhirnya adalah menghasilkan informasi yang kaya tanpa mengorbankan performa VPS.
+
+Acceptance Criteria
+
+Analytics Engine dianggap memenuhi spesifikasi apabila mampu mengubah Raw Metric menjadi informasi historis, statistik, tren, korelasi, prediksi, dan rekomendasi yang mudah dipahami, mendukung Aggregation bertingkat, menyediakan data yang siap ditampilkan pada Dashboard, mempertahankan performa ketika jumlah Metric terus bertambah, serta tetap menghasilkan analisis yang konsisten meskipun AI tidak tersedia. Seluruh hasil Analytics harus berasal dari Monitoring Engine, mudah diverifikasi, dan mampu menjadi dasar bagi Notification, Automation, Health Score, maupun pengambilan keputusan pengguna.
