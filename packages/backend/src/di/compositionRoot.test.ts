@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { registerUseCases } from './compositionRoot.js';
 import type { ServiceContainer } from '../infrastructure/utilities.js';
 import type { Logger } from '../logging/index.js';
@@ -14,10 +14,6 @@ describe('DI CompositionRoot', () => {
 
   beforeAll(() => {
     process.env['JWT_SECRET'] = 'test-secret-key';
-  });
-
-  afterAll(() => {
-    delete process.env['JWT_SECRET'];
   });
 
   beforeEach(() => {
@@ -102,6 +98,13 @@ describe('DI CompositionRoot', () => {
     expect(container.register).toHaveBeenCalledWith('updateConfigurationUseCase', expect.any(Function));
     expect(container.register).toHaveBeenCalledWith('listSessionsUseCase', expect.any(Function));
     expect(container.register).toHaveBeenCalledWith('listRolesUseCase', expect.any(Function));
+  });
+
+  it('throws if JWT_SECRET is not set', () => {
+    const original = process.env['JWT_SECRET'];
+    delete process.env['JWT_SECRET'];
+    expect(() => registerUseCases(container, mockLogger)).toThrow('JWT_SECRET');
+    process.env['JWT_SECRET'] = original;
   });
 
   it('all registered factories produce valid objects', () => {
