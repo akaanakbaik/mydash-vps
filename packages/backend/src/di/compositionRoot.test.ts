@@ -12,6 +12,14 @@ const mockLogger: Logger = {
 describe('DI CompositionRoot', () => {
   let container: ServiceContainer;
 
+  beforeAll(() => {
+    process.env['JWT_SECRET'] = 'test-secret-key';
+  });
+
+  afterAll(() => {
+    delete process.env['JWT_SECRET'];
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     container = {
