@@ -19,20 +19,29 @@ export function createAuthRouter(di?: DI): Router {
     }
 
     const uc = resolve('loginUseCase') as UseCase<{ workspaceId: string; password: string }, unknown> | null;
-    if (uc) {
-      try {
-        const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId: workspaceId ?? 'default' });
-        const result = await uc.execute({ workspaceId: workspaceId ?? 'default', password }, uctx);
-        if (result.success && result.data) { 
-          const loginData = result.data as { user?: { id?: string } };
-          sendOk(res, result.data, ctx); 
-          broadcastEvent(req, 'session', 'session.created', { userId: loginData.user?.id ?? 'anonymous' }); 
-          return; 
-        }
-      } catch { /* fall through */ }
+    if (!uc) {
+      sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Auth service not initialized', ctx);
+      return;
     }
 
-    sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Auth service not initialized', ctx);
+    try {
+      const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId: workspaceId ?? 'default' });
+      const result = await uc.execute({ workspaceId: workspaceId ?? 'default', password }, uctx);
+      if (result.success) {
+        const loginData = result.data as { user?: { id?: string } } | null;
+        sendOk(res, result.data ?? { message: 'ok' }, ctx);
+        broadcastEvent(req, 'session', 'session.created', { userId: loginData?.user?.id ?? 'anonymous' });
+        return;
+      }
+      // Surface the actual error instead of generic 503
+      const err = result.error as { code?: string; message?: string } | null;
+      sendError(res, 401, err?.code ?? 'AUTH_FAILED', err?.message ?? 'Authentication failed', ctx);
+      return;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      sendError(res, 500, 'AUTH_INTERNAL_ERROR', errorMessage, ctx);
+      return;
+    }
   });
 
   router.post('/logout', async (req, res) => {

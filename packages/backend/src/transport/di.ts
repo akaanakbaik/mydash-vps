@@ -31,6 +31,8 @@ export function registerTransport(container: ServiceContainer, env: Record<strin
   const wsServer = createWebSocketServer(server, logger, { path: config.wsPath });
   app.set('wsServer', wsServer);
 
+  container.register('wsServer', () => wsServer);
+
   server.listen(config.port, config.host, () => {
     logger.info(`server listening on ${config.host}:${String(config.port)}`);
   });

@@ -13,7 +13,7 @@ export function createApiRouter(logger: Logger, jwtSecret: string, registry?: Se
 
   const di = { resolve: (key: string) => registry?.resolve(key) ?? null };
 
-  api.use('/auth', createAuthRouter());
+  api.use('/auth', createAuthRouter(di));
 
   api.use('/dashboard', auth, createDashboardRouter(di));
   api.use('/servers', auth, createServersRouter(di));

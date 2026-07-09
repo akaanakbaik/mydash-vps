@@ -80,9 +80,14 @@ export class LoginUseCaseImpl implements UseCase<LoginRequestDTO, unknown> {
       const sessionId = crypto.randomUUID();
       const tokenVersion = 1;
 
+      // Use the user's actual workspace UUID from the database
+      // The raw workspaceId input may be a string like 'default'
+      // but the database column is UUID type
+      const actualWorkspaceId = user.workspaceId as unknown as string;
+
       const accessToken = await generateAccessToken({
         userId: user.id,
-        workspaceId,
+        workspaceId: actualWorkspaceId,
         role: user.role || 'member',
         permissions: ['*'],
         tokenVersion,
@@ -94,7 +99,7 @@ export class LoginUseCaseImpl implements UseCase<LoginRequestDTO, unknown> {
       const now = new Date();
       const session = {
         id: sessionId as unknown as Session['id'],
-        workspaceId: workspaceId as unknown as Session['workspaceId'],
+        workspaceId: actualWorkspaceId as unknown as Session['workspaceId'],
         userId: user.id,
         sessionIdentifier: accessToken,
         device: '',

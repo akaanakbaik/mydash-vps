@@ -5,7 +5,7 @@ export { createDatabaseConfig } from './config.js';
 export type { DatabaseConfig } from './config.js';
 export * from './schema/index.js';
 export { DrizzleMigrationRunner } from './migration/index.js';
-export { SeedRunner } from './seed/index.js';
+export { SeedRunner, initialSeed } from './seed/index.js';
 export type { Seed } from './seed/index.js';
 export { BaseDrizzleRepository, DrizzleTransactionManager, DrizzleUnitOfWork } from './repository/index.js';
 export { DrizzleRepositoryFactory } from './repository/factory.js';

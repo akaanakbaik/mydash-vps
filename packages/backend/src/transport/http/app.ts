@@ -17,7 +17,6 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
     xContentTypeOptions: false as const,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     frameguard: { action: 'deny' },
-    noSniff: undefined,
   }));
   app.use(cors({
     origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
