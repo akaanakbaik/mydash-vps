@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    --color-bg: 0 0% 4%;
+    --color-surface: 0 0% 9%;
+    --color-border: 0 0% 15%;
+    --color-text: 0 0% 93%;
+    --color-muted: 0 0% 55%;
+    --color-primary: 217 91% 60%;
+    --color-accent: 262 83% 58%;
+    --color-success: 142 71% 45%;
+    --color-warning: 38 92% 50%;
+    --color-danger: 0 84% 60%;
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { border-color: hsl(var(--color-border)); }
+  body {
+    background-color: hsl(var(--color-bg));
+    color: hsl(var(--color-text));
+    font-family: var(--font-sans);
+  }
+}

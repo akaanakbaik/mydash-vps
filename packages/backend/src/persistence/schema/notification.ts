@@ -1,0 +1,37 @@
+import { pgTable, uuid, varchar, text, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { baseColumns, serverId } from './base.js';
+
+export const notificationRules = pgTable('notification_rules', {
+  ...baseColumns,
+  name: varchar('name', { length: 200 }).notNull(),
+  category: varchar('category', { length: 50 }).notNull(),
+  sourceMetric: varchar('source_metric', { length: 100 }).notNull(),
+  operator: varchar('operator', { length: 50 }).notNull(),
+  threshold: integer('threshold').notNull(),
+  durationSeconds: integer('duration_seconds').notNull(),
+  cooldownSeconds: integer('cooldown_seconds').notNull(),
+  severity: varchar('severity', { length: 50 }).notNull(),
+  providerTarget: jsonb('provider_target').notNull(),
+  aiAnalysis: boolean('ai_analysis').notNull().default(false),
+  enabled: boolean('enabled').notNull().default(true),
+});
+
+export const notificationDeliveries = pgTable('notification_deliveries', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceId: uuid('workspace_id').notNull(),
+  serverId,
+  ruleId: uuid('rule_id').notNull(),
+  templateId: varchar('template_id', { length: 100 }),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  status: varchar('status', { length: 50 }).notNull().default('pending'),
+  priority: varchar('priority', { length: 50 }).notNull(),
+  message: text('message'),
+  result: text('result'),
+  retryCount: integer('retry_count').default(0),
+  maxRetry: integer('max_retry').default(3),
+  aiAnalysis: text('ai_analysis'),
+  errorDetails: text('error_details'),
+  correlationId: varchar('correlation_id', { length: 100 }).notNull(),
+  createdAt: text('created_at').notNull(),
+  deliveredAt: text('delivered_at'),
+});
