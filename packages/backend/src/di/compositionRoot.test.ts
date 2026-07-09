@@ -103,7 +103,7 @@ describe('DI CompositionRoot', () => {
   it('throws if JWT_SECRET is not set', () => {
     const original = process.env['JWT_SECRET'];
     delete process.env['JWT_SECRET'];
-    expect(() => registerUseCases(container, mockLogger)).toThrow('JWT_SECRET');
+    expect(() => { registerUseCases(container, mockLogger); }).toThrow('JWT_SECRET');
     process.env['JWT_SECRET'] = original;
   });
 
