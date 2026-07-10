@@ -13,8 +13,8 @@ export function LoginPage() {
   const loginMutation = useLogin();
 
   const handleSubmit = () => {
-    if (!username || !password) {
-      setError('Please enter username and password');
+    if (!password) {
+      setError('Please enter password');
       return;
     }
     setError(null);

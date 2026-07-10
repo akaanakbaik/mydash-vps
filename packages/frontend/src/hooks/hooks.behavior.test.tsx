@@ -112,12 +112,14 @@ describe('useLogin mutation behavior', () => {
 
   it('should call authRepository.login when mutate is called', async () => {
     vi.mocked(authRepository.login).mockResolvedValue({
-      success: true, data: { token: 'abc', user: { id: 'u1', username: 'admin', email: 'a@b.com', role: 'owner' }, expiresAt: '' },
-      correlationId: '', timestamp: '',
+      accessToken: 'abc',
+      user: { id: 'u1', name: 'admin', email: 'a@b.com', role: 'owner' },
     });
     const { result } = renderHook(() => useLogin(), { wrapper: createWrapper() });
     result.current.mutate({ username: 'admin', password: 'pass' });
     await waitFor(() => { expect(authRepository.login).toHaveBeenCalledWith({ username: 'admin', password: 'pass' }); });
+    // login() internally extracts only password when calling the backend
+    expect(authRepository.login).toHaveBeenCalledTimes(1);
   });
 });
 

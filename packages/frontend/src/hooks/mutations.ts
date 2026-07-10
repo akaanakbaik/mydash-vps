@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../api/queryKeys.js';
 import { authRepository, type LoginRequest } from '../repositories/auth.js';
+import { tokenStorage } from '../utils/tokenStorage.js';
 import { backupRepository } from '../repositories/backup.js';
 import { dockerRepository } from '../repositories/docker.js';
 import { sessionRepository } from '../repositories/session.js';
@@ -14,8 +15,10 @@ import { automationRepository } from '../repositories/automation.js';
 export function useLoginMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: LoginRequest) => authRepository.login(data).then((r) => r.data),
-    onSuccess: () => {
+    mutationFn: (data: LoginRequest) => authRepository.login(data),
+    onSuccess: (result) => {
+      // Store JWT token for auth interceptor
+      tokenStorage.setToken(result.accessToken);
       void queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },
   });

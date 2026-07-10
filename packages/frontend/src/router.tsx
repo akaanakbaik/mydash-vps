@@ -1,8 +1,9 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { createBrowserRouter, Outlet, ScrollRestoration } from 'react-router-dom';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { createBrowserRouter, Outlet, ScrollRestoration, useNavigate } from 'react-router-dom';
 import { AppShell } from './components/shell/AppShell.js';
 import { ErrorBoundary } from './components/shared/ErrorBoundary.js';
 import { SkeletonBlock } from './components/shared/Skeleton.js';
+import { tokenStorage } from './utils/tokenStorage.js';
 
 const OverviewPage = lazy(() => import('./pages/Overview.js').then((m) => ({ default: m.OverviewPage })));
 const MonitoringPage = lazy(() => import('./pages/Monitoring.js').then((m) => ({ default: m.MonitoringPage })));
@@ -39,15 +40,37 @@ function Suspended({ children }: { children: ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
+function AuthCheck({ children }: { children: ReactNode }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!tokenStorage.hasToken()) {
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
+  if (!tokenStorage.hasToken()) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--color-bg))]">
+        <div className="text-sm text-[hsl(var(--color-muted))]">Redirecting to login...</div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function Layout() {
   return (
     <ErrorBoundary>
-      <AppShell>
-        <ScrollRestoration />
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
-      </AppShell>
+      <AuthCheck>
+        <AppShell>
+          <ScrollRestoration />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </AppShell>
+      </AuthCheck>
     </ErrorBoundary>
   );
 }
