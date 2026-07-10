@@ -69,7 +69,7 @@ export function LoginForm({
         </button>
       </div>
 
-      <button type="submit" disabled={isLoading || !username || !password}
+      <button type="submit" disabled={isLoading || !password}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-[hsl(var(--color-primary))] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[hsl(var(--color-primary))]/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]">
         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <LogIn className="h-4 w-4" aria-hidden="true" />}
         {isLoading ? 'Signing in...' : 'Sign In'}

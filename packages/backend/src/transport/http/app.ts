@@ -65,12 +65,19 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
   const frontendDist = resolveFrontendDist();
   if (frontendDist) {
     logger.info(`Serving static frontend from ${frontendDist}`);
+    // Serve static assets (JS/CSS) with long cache + immutable
+    // index.html is excluded from caching — served via SPA fallback with no-cache
     app.use(express.static(frontendDist, {
-      maxAge: '1d',
+      maxAge: '1y',
+      immutable: true,
       etag: true,
       lastModified: true,
-      setHeaders: (res) => {
+      setHeaders: (res, filePath) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        // Never cache index.html — it changes with every build
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
       },
     }));
     // SPA fallback: serve index.html for non-API, non-file routes
