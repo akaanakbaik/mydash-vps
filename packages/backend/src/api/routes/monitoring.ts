@@ -58,14 +58,40 @@ export function createDashboardRouter(di?: DI): Router {
       } catch { /* fall through to default */ }
     }
 
+    // Match frontend DashboardResponse type exactly
     sendOk(res, {
-      score: 0, grade: 'N/A', uptime: 0,
-      servers: { total: 0, online: 0, offline: 0 },
-      cpu: { usage: 0, cores: 0 },
-      memory: { total: 0, used: 0, percentage: 0 },
-      disk: { total: 0, used: 0, percentage: 0 },
-      alerts: [], services: [],
-      lastUpdated: new Date().toISOString(),
+      server: {
+        hostname: 'localhost',
+        os: 'Linux',
+        uptime: '0h 0m',
+        cpuCores: 4,
+        cpuModel: 'Virtual CPU',
+        totalRam: 8192,
+        usedRam: 0,
+        totalDisk: 102400,
+        usedDisk: 0,
+        agentVersion: '1.0.0',
+      },
+      health: {
+        score: 0,
+        grade: 'N/A',
+        trend: 'stable',
+        factors: [],
+      },
+      resources: [
+        { label: 'CPU', used: 0, total: 100, percent: 0, unit: '%', trend: 'stable' },
+        { label: 'Memory', used: 0, total: 8192, percent: 0, unit: 'MB', trend: 'stable' },
+        { label: 'Disk', used: 0, total: 102400, percent: 0, unit: 'MB', trend: 'stable' },
+      ],
+      notificationSummary: { total: 0, unread: 0, failed: 0, lastDelivery: new Date().toISOString() },
+      automationSummary: { active: 0, successRate: 0, running: 0, failed: 0, lastRun: new Date().toISOString() },
+      activeAlerts: [],
+      recentActivity: [],
+      quickActions: [
+        { label: 'View Servers', icon: 'server', description: 'Manage your servers', to: '/servers' },
+        { label: 'Check Health', icon: 'heart', description: 'View health scores', to: '/health' },
+        { label: 'Settings', icon: 'settings', description: 'Configure system', to: '/settings' },
+      ],
     }, ctx);
   });
   return router;
