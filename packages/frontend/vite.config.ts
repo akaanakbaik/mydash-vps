@@ -15,7 +15,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id: string) {
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react')) return 'react-vendor';
+          // React + scheduler must be in same chunk to avoid circular deps
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react') || id.includes('node_modules/scheduler')) return 'react-vendor';
           if (id.includes('node_modules/zustand')) return 'state-vendor';
           if (id.includes('node_modules/@tanstack')) return 'query-vendor';
           if (id.includes('node_modules/recharts')) return 'chart-vendor';
