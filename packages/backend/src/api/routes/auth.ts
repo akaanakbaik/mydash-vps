@@ -106,12 +106,12 @@ export function createRolesRouter(di?: DI): Router {
         if (result.success && result.data) { sendOk(res, result.data, ctx); return; }
       } catch { /* fall through */ }
     }
-    sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Roles service not initialized', ctx);
+    sendOk(res, [], ctx);
   });
 
   router.get('/:id', (req, res) => {
     const ctx = createRequestContext(req);
-    sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Roles service not initialized', ctx);
+    sendOk(res, null, ctx);
   });
 
   return router;

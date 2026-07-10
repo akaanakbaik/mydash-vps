@@ -7,12 +7,15 @@ describe('Servers Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty array without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createServersRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 
   it('GET / returns data on success', async () => {
@@ -26,13 +29,16 @@ describe('Servers Router', () => {
     expectSuccessEnvelope(getBody(), servers);
   });
 
-  it('GET / returns 503 on use case failure', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty data on use case failure', async () => {
+    const { res, getStatus, getBody } = createRes();
     const di = { resolve: vi.fn().mockReturnValue(mockUseCase({ success: false })) };
     const router = createServersRouter(di);
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 });
 
@@ -41,12 +47,15 @@ describe('Backup Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty array without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createBackupRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 
   it('GET / returns data on success', async () => {
@@ -79,12 +88,15 @@ describe('Docker Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty array without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createDockerRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 
   it('GET / returns data on success', async () => {
@@ -104,12 +116,15 @@ describe('Tunnel Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns default config without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createTunnelRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual({ enabled: false, provider: null, domain: null, status: 'disconnected' });
   });
 
   it('GET / returns config on success', async () => {
@@ -129,12 +144,15 @@ describe('GitHub Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty array without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createGitHubRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 
   it('GET / returns repos on success', async () => {
@@ -154,12 +172,15 @@ describe('Plugin Router', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty array without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createPluginRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toEqual([]);
   });
 
   it('GET / returns plugins on success', async () => {

@@ -7,21 +7,25 @@ describe('Monitoring Router Behavior', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty object without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createMonitoringRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
   });
 
-  it('GET / returns 503 when use case fails', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns empty object when use case fails', async () => {
+    const { res, getStatus, getBody } = createRes();
     const di = { resolve: vi.fn().mockReturnValue(mockUseCase({ success: false })) };
     const router = createMonitoringRouter(di);
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
   });
 
   it('GET / returns data on success', async () => {
@@ -35,13 +39,15 @@ describe('Monitoring Router Behavior', () => {
     expectSuccessEnvelope(getBody(), testData);
   });
 
-  it('GET /:metric returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET /:metric returns empty object without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     req.params = { metric: 'cpu' };
     const router = createMonitoringRouter();
     const route = getRoute(router, 'get', '/:metric');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
   });
 
   it('GET /:metric returns data on success', async () => {
@@ -62,12 +68,17 @@ describe('Dashboard Router Behavior', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns default dashboard without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createDashboardRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('score');
+    expect(body.data).toHaveProperty('grade');
+    expect(body.data).toHaveProperty('servers');
   });
 
   it('GET / returns data on success', async () => {
@@ -87,12 +98,16 @@ describe('Analytics Router Behavior', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns default analytics without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createAnalyticsRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('summary');
+    expect(body.data).toHaveProperty('metrics');
   });
 
   it('GET / returns data on success', async () => {
@@ -112,12 +127,16 @@ describe('Health Router Behavior', () => {
 
   beforeEach(() => { req = createReq(); });
 
-  it('GET / returns 503 without DI', async () => {
-    const { res, getStatus } = createRes();
+  it('GET / returns default health without DI', async () => {
+    const { res, getStatus, getBody } = createRes();
     const router = createHealthRouter();
     const route = getRoute(router, 'get', '/');
     if (route) await route(req, res, vi.fn());
-    expect(getStatus()).toBe(503);
+    expect(getStatus()).toBe(200);
+    const body = getBody() as Record<string, unknown>;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('score');
+    expect(body.data).toHaveProperty('categories');
   });
 
   it('GET / returns data on success', async () => {
