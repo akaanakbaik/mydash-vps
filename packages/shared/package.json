@@ -1,0 +1,17 @@
+{
+  "name": "@mydash/shared",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "bunx tsc -b",
+    "typecheck": "bunx tsc --noEmit",
+    "lint": "eslint .",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

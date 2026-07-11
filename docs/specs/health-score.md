@@ -1,0 +1,25 @@
+Health Score Engine Engineering Specification
+
+Purpose
+
+Health Score Engine merupakan sistem evaluasi kondisi VPS secara menyeluruh yang mengubah ratusan bahkan ribuan Metric menjadi satu nilai yang mudah dipahami oleh pengguna. Health Score tidak hanya menampilkan angka, tetapi juga menjadi indikator utama apakah VPS berada dalam kondisi Excellent, Healthy, Stable, Warning, Critical, atau Emergency. Engine ini harus mampu memperhitungkan CPU, Memory, Swap, Disk Usage, Disk I/O, Network, Latency, Packet Loss, Docker, Tunnel, Redis, PostgreSQL, Queue, Notification Worker, Automation Worker, WebSocket Gateway, GitHub Integration, Backup Status, serta berbagai indikator lainnya menjadi satu skor komprehensif. Perhitungan dilakukan sepenuhnya menggunakan algoritma lokal sehingga tetap tersedia walaupun AI tidak dapat diakses. AI hanya digunakan untuk menjelaskan alasan perubahan skor, memberikan diagnosis, dan menyarankan tindakan perbaikan berdasarkan hasil yang telah dihitung secara deterministik.
+
+Scoring Model and Mathematical Foundation
+
+Health Score dibangun menggunakan Weighted Multi-Domain Evaluation. Setiap Domain memiliki bobot yang dapat dikonfigurasi sesuai jenis Server, misalnya Database Server dapat memberikan bobot lebih tinggi pada Disk dan PostgreSQL, sedangkan Reverse Proxy lebih memprioritaskan Tunnel dan Network. Sebelum dilakukan pembobotan, seluruh Metric dinormalisasi ke rentang yang sama sehingga dapat dibandingkan secara adil. Selain nilai sesaat, Engine juga menghitung Trend, Moving Average, Confidence Score, Resource Stability Index, Recovery Index, Failure Frequency, Availability Ratio, Mean Time Between Failure, Mean Time To Recovery, serta Error Severity Distribution. Dengan pendekatan tersebut Health Score tidak mudah berubah hanya karena lonjakan sesaat, tetapi tetap mampu merespons kondisi kritis yang benar-benar memerlukan perhatian pengguna.
+
+Decision Engine and Threshold Evaluation
+
+Perubahan Health Score tidak boleh hanya dipengaruhi oleh satu Metric. Sebagai contoh, CPU tinggi selama proses Build yang telah diketahui bukan merupakan kondisi kritis, sedangkan CPU tinggi yang disertai Memory Leak, Disk I/O ekstrem, dan Tunnel Disconnect harus menghasilkan penurunan skor yang jauh lebih besar. Threshold bersifat adaptif dan dapat diatur oleh pengguna melalui Dashboard. Selain Threshold manual, Engine juga menghitung Dynamic Threshold berdasarkan perilaku historis VPS sehingga sistem mampu membedakan antara kondisi normal dan anomali. Apabila Health melewati batas tertentu, Engine menerbitkan Event yang kemudian dikonsumsi oleh Notification, Automation, Analytics, maupun AI tanpa melakukan pemanggilan langsung ke modul lain.
+
+Visualization and Historical Analysis
+
+Dashboard menampilkan Health Score dalam bentuk Gauge, Progress Ring, Trend Line, Heatmap, serta Historical Timeline. Pengguna dapat melihat perubahan Health dalam rentang satu jam, satu hari, satu minggu, satu bulan, hingga satu tahun. Selain nilai keseluruhan, Dashboard juga menampilkan kontribusi masing-masing Domain sehingga pengguna mengetahui faktor terbesar yang menyebabkan penurunan atau peningkatan skor. Health History disimpan sebagai Time Series yang telah diagregasi sehingga grafik tetap cepat walaupun data historis terus bertambah. Seluruh perubahan besar disimpan sebagai Milestone agar pengguna dapat menghubungkan perubahan konfigurasi dengan perubahan kondisi sistem secara historis.
+
+Reliability, Recovery, and Continuous Evaluation
+
+Health Score dihitung secara berkala setiap kali Monitoring menghasilkan Metric baru atau ketika terjadi Event penting seperti Recovery Redis, Restart PostgreSQL, Tunnel Failure, Backup Success, atau Automation Failure. Apabila sebagian Collector gagal, Engine tetap menghasilkan skor dengan menurunkan Confidence Score sesuai jumlah Domain yang tidak tersedia. Seluruh perhitungan harus dapat direproduksi menggunakan Input yang sama sehingga mempermudah Audit, Debugging, dan Unit Testing. AI wajib memastikan bahwa Health Engine tidak menghasilkan fluktuasi yang tidak masuk akal, tidak mudah memicu False Alarm, serta mampu beroperasi terus-menerus dengan penggunaan CPU dan Memory yang rendah walaupun jumlah Workspace dan Server meningkat secara signifikan.
+
+Acceptance Criteria
+
+Health Score Engine dianggap memenuhi spesifikasi apabila mampu menghitung skor kesehatan VPS secara konsisten menggunakan algoritma lokal, mendukung bobot yang dapat dikonfigurasi, Trend Analysis, Confidence Score, Dynamic Threshold, Historical Analysis, serta integrasi penuh dengan Monitoring, Analytics, Notification, Automation, dan Dashboard. Seluruh keputusan harus dapat dijelaskan secara matematis, mudah diverifikasi, tidak bergantung pada AI, serta mampu memberikan representasi kondisi VPS yang akurat pada berbagai jenis beban dan lingkungan produksi.

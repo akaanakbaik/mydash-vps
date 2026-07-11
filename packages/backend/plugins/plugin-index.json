@@ -1,0 +1,458 @@
+[
+  {
+    "id": "cpu-monitor",
+    "name": "CPU Monitor Pro",
+    "version": "1.0.0",
+    "description": "Advanced CPU monitoring with per-core graphs and thermal tracking",
+    "author": "MyDash",
+    "category": "monitoring",
+    "icon": "Cpu",
+    "config": {
+      "interval": {
+        "label": "Check Interval (s)",
+        "type": "number",
+        "default": 5
+      },
+      "alertThreshold": {
+        "label": "Alert Threshold %",
+        "type": "number",
+        "default": 80
+      },
+      "enableThermal": {
+        "label": "Thermal Monitoring",
+        "type": "toggle",
+        "default": true
+      }
+    },
+    "permissions": [
+      "system:read"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "ram-analyzer",
+    "name": "RAM Analyzer",
+    "version": "1.0.0",
+    "description": "Detailed memory analysis with per-process breakdown",
+    "author": "MyDash",
+    "category": "monitoring",
+    "icon": "Memory",
+    "config": {
+      "interval": {
+        "label": "Check Interval (s)",
+        "type": "number",
+        "default": 10
+      },
+      "topProcesses": {
+        "label": "Top Processes",
+        "type": "number",
+        "default": 10
+      }
+    },
+    "permissions": [
+      "system:read"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "disk-cleaner",
+    "name": "Disk Cleaner",
+    "version": "1.0.0",
+    "description": "Automated disk cleanup and space optimization",
+    "author": "MyDash",
+    "category": "automation",
+    "icon": "HardDrive",
+    "config": {
+      "autoClean": {
+        "label": "Auto Clean",
+        "type": "toggle",
+        "default": false
+      },
+      "maxLogAge": {
+        "label": "Max Log Age (days)",
+        "type": "number",
+        "default": 30
+      },
+      "excludeDirs": {
+        "label": "Exclude Dirs",
+        "type": "text",
+        "default": "/etc,/boot"
+      }
+    },
+    "permissions": [
+      "system:write",
+      "files:delete"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "port-scanner",
+    "name": "Port Scanner",
+    "version": "1.0.0",
+    "description": "Network port scanning and security analysis",
+    "author": "MyDash",
+    "category": "security",
+    "icon": "Shield",
+    "config": {
+      "scanInterval": {
+        "label": "Scan Interval (min)",
+        "type": "number",
+        "default": 60
+      },
+      "ports": {
+        "label": "Ports to scan",
+        "type": "text",
+        "default": "22,80,443,3306,5432"
+      },
+      "alertOnNew": {
+        "label": "Alert on new ports",
+        "type": "toggle",
+        "default": true
+      }
+    },
+    "permissions": [
+      "network:scan"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "backup-scheduler",
+    "name": "Backup Scheduler",
+    "version": "1.0.0",
+    "description": "Advanced backup scheduling with cloud sync",
+    "author": "MyDash",
+    "category": "automation",
+    "icon": "HardDrive",
+    "config": {
+      "schedule": {
+        "label": "Cron Schedule",
+        "type": "text",
+        "default": "0 3 * * *"
+      },
+      "retention": {
+        "label": "Retention (days)",
+        "type": "number",
+        "default": 7
+      },
+      "cloudProvider": {
+        "label": "Cloud Provider",
+        "type": "select",
+        "default": "none",
+        "options": [
+          "none",
+          "s3",
+          "gdrive",
+          "dropbox"
+        ]
+      }
+    },
+    "permissions": [
+      "files:read",
+      "files:write"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "ssl-watchdog",
+    "name": "SSL Watchdog",
+    "version": "1.0.0",
+    "description": "SSL certificate expiry monitoring and renewal",
+    "author": "MyDash",
+    "category": "security",
+    "icon": "Lock",
+    "config": {
+      "domains": {
+        "label": "Domains",
+        "type": "text",
+        "default": ""
+      },
+      "alertDays": {
+        "label": "Alert before (days)",
+        "type": "number",
+        "default": 14
+      },
+      "autoRenew": {
+        "label": "Auto Renew",
+        "type": "toggle",
+        "default": false
+      }
+    },
+    "permissions": [
+      "system:read",
+      "cert:manage"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "network-analyzer",
+    "name": "Network Analyzer",
+    "version": "1.0.0",
+    "description": "Real-time network traffic analysis and bandwidth monitoring",
+    "author": "MyDash",
+    "category": "monitoring",
+    "icon": "Activity",
+    "config": {
+      "interval": {
+        "label": "Sample Interval (s)",
+        "type": "number",
+        "default": 2
+      },
+      "topPorts": {
+        "label": "Top Ports",
+        "type": "number",
+        "default": 10
+      },
+      "alertBandwidth": {
+        "label": "Alert Bandwidth (MB/s)",
+        "type": "number",
+        "default": 100
+      }
+    },
+    "permissions": [
+      "network:read"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "docker-manager",
+    "name": "Docker Manager",
+    "version": "1.0.0",
+    "description": "Advanced Docker container management with stats",
+    "author": "MyDash",
+    "category": "utility",
+    "icon": "Package",
+    "config": {
+      "autoRestart": {
+        "label": "Auto Restart Failed",
+        "type": "toggle",
+        "default": false
+      },
+      "pruneInterval": {
+        "label": "Prune Interval (h)",
+        "type": "number",
+        "default": 24
+      },
+      "monitorStats": {
+        "label": "Monitor Stats",
+        "type": "toggle",
+        "default": true
+      }
+    },
+    "permissions": [
+      "docker:manage"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "log-analyzer",
+    "name": "Log Analyzer",
+    "version": "1.0.0",
+    "description": "Intelligent log analysis with pattern detection",
+    "author": "MyDash",
+    "category": "analytics",
+    "icon": "FileText",
+    "config": {
+      "patterns": {
+        "label": "Alert Patterns",
+        "type": "text",
+        "default": "error,failed,crash,timeout"
+      },
+      "maxLines": {
+        "label": "Max Lines",
+        "type": "number",
+        "default": 1000
+      },
+      "enableML": {
+        "label": "ML Detection",
+        "type": "toggle",
+        "default": false
+      }
+    },
+    "permissions": [
+      "system:read"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "telegram-bot",
+    "name": "Telegram Notifier",
+    "version": "1.0.0",
+    "description": "Enhanced Telegram notifications with custom templates",
+    "author": "MyDash",
+    "category": "notification",
+    "icon": "Bell",
+    "config": {
+      "template": {
+        "label": "Message Template",
+        "type": "text",
+        "default": "[{severity}] {title}: {message}"
+      },
+      "includeMetrics": {
+        "label": "Include Metrics",
+        "type": "toggle",
+        "default": true
+      },
+      "silentHours": {
+        "label": "Silent Hours (HH:MM-HH:MM)",
+        "type": "text",
+        "default": "00:00-06:00"
+      }
+    },
+    "permissions": [
+      "notification:send"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "uptime-monitor",
+    "name": "Uptime Monitor",
+    "version": "1.0.0",
+    "description": "External uptime monitoring with HTTP/HTTPS checks",
+    "author": "MyDash",
+    "category": "monitoring",
+    "icon": "Activity",
+    "config": {
+      "endpoints": {
+        "label": "Endpoints",
+        "type": "text",
+        "default": "https://example.com"
+      },
+      "checkInterval": {
+        "label": "Check Interval (s)",
+        "type": "number",
+        "default": 60
+      },
+      "method": {
+        "label": "HTTP Method",
+        "type": "select",
+        "default": "GET",
+        "options": [
+          "GET",
+          "HEAD",
+          "POST"
+        ]
+      }
+    },
+    "permissions": [
+      "network:read"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "firewall-manager",
+    "name": "Firewall Manager",
+    "version": "1.0.0",
+    "description": "UFW/iptables firewall rule management",
+    "author": "MyDash",
+    "category": "security",
+    "icon": "Shield",
+    "config": {
+      "defaultPolicy": {
+        "label": "Default Policy",
+        "type": "select",
+        "default": "deny",
+        "options": [
+          "allow",
+          "deny"
+        ]
+      },
+      "autoBlock": {
+        "label": "Auto Block SSH",
+        "type": "toggle",
+        "default": true
+      },
+      "maxAttempts": {
+        "label": "Max SSH Attempts",
+        "type": "number",
+        "default": 5
+      }
+    },
+    "permissions": [
+      "firewall:manage"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "cron-manager",
+    "name": "Cron Manager",
+    "version": "1.0.0",
+    "description": "Visual cron job management and scheduling",
+    "author": "MyDash",
+    "category": "utility",
+    "icon": "Clock",
+    "config": {
+      "backupCrons": {
+        "label": "Backup Before Edit",
+        "type": "toggle",
+        "default": true
+      },
+      "validateSyntax": {
+        "label": "Validate Syntax",
+        "type": "toggle",
+        "default": true
+      }
+    },
+    "permissions": [
+      "system:write"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  },
+  {
+    "id": "performance-tuner",
+    "name": "Performance Tuner",
+    "version": "1.0.0",
+    "description": "Auto-tuning system parameters for optimal performance",
+    "author": "MyDash",
+    "category": "automation",
+    "icon": "Activity",
+    "config": {
+      "autoTune": {
+        "label": "Auto Tune",
+        "type": "toggle",
+        "default": false
+      },
+      "kernelParams": {
+        "label": "Kernel Params",
+        "type": "toggle",
+        "default": false
+      },
+      "swappiness": {
+        "label": "VM Swappiness",
+        "type": "number",
+        "default": 10
+      }
+    },
+    "permissions": [
+      "system:write"
+    ],
+    "minAppVersion": "1.0.0",
+    "installed": false,
+    "enabled": false
+  }
+]

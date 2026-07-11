@@ -1,0 +1,25 @@
+Coding Standard Engineering Specification
+
+Purpose
+
+Dokumen ini mendefinisikan standar penulisan kode untuk seluruh proyek My Dash agar setiap berkas memiliki struktur, gaya, kualitas, dan pola implementasi yang konsisten tanpa bergantung pada siapa yang menulisnya. Tujuan utama Coding Standard bukan sekadar menjaga tampilan kode tetap rapi, tetapi memastikan bahwa setiap Function mudah dipahami, setiap Module memiliki tanggung jawab yang jelas, setiap perubahan dapat ditinjau dengan cepat, dan setiap AI Agent menghasilkan implementasi yang mengikuti pola yang sama. Konsistensi jauh lebih penting daripada preferensi pribadi. Apabila terdapat dua solusi yang sama-sama benar, AI wajib memilih solusi yang paling mudah dipelihara, paling mudah diuji, paling mudah dibaca, dan paling sesuai dengan arsitektur My Dash. Seluruh implementasi harus mengutamakan keterbacaan jangka panjang dibanding penghematan beberapa baris kode.
+
+Project Structure and Module Organization
+
+Seluruh kode harus dipisahkan berdasarkan Domain, bukan berdasarkan jenis berkas semata. Setiap Domain memiliki tanggung jawab yang jelas dan tidak diperbolehkan mencampurkan Monitoring, Notification, Queue, Analytics, Automation, maupun Domain lain dalam satu Module. Setiap File hanya memiliki satu tujuan utama dan ukuran File harus tetap berada pada batas yang masih mudah dipahami. Function dibuat kecil, fokus, dan hanya menyelesaikan satu pekerjaan. Business Logic tidak boleh berada di dalam UI Component, Controller, ataupun Utility yang tidak berkaitan. Seluruh komunikasi antar Domain dilakukan melalui Interface, Application Service, atau Event Bus sesuai arsitektur yang telah ditetapkan. AI harus menghindari Utility yang terlalu umum hingga akhirnya menjadi tempat penyimpanan berbagai Function yang tidak saling berhubungan.
+
+Naming Convention and Code Readability
+
+Nama Variable, Function, Class, Interface, Enum, Type, maupun Constant harus menggunakan bahasa Inggris yang jelas, deskriptif, dan konsisten di seluruh proyek. Nama tidak boleh disingkat apabila menyebabkan makna menjadi ambigu. Function harus menggunakan kata kerja yang menjelaskan tindakan, sedangkan Class menggunakan kata benda yang menjelaskan tanggung jawabnya. Boolean diawali dengan awalan yang menggambarkan kondisi seperti is, has, can, atau should agar mudah dipahami ketika dibaca. AI wajib menghindari Magic Number, Magic String, serta Logika yang sulit dipahami hanya karena ingin membuat kode menjadi lebih pendek. Kode harus mampu menjelaskan dirinya sendiri melalui struktur dan penamaan sehingga kebutuhan terhadap komentar menjadi seminimal mungkin.
+
+Error Handling, Validation, and Defensive Programming
+
+Setiap Input yang berasal dari pengguna, API, Plugin, Database, maupun layanan eksternal wajib divalidasi sebelum digunakan. Error harus diperlakukan sebagai bagian normal dari sistem, bukan sebagai kondisi yang diabaikan. Setiap Exception ditangani pada lapisan yang tepat dan tidak diperbolehkan ditelan tanpa Logging maupun penanganan yang jelas. AI wajib menerapkan Fail Fast apabila konfigurasi penting tidak valid, namun tetap menjaga agar Domain lain yang tidak terdampak dapat terus berjalan. Seluruh Resource harus dibebaskan dengan benar setelah digunakan, seluruh operasi Asynchronous harus memiliki Timeout yang jelas, dan seluruh Function harus mengembalikan hasil yang dapat diprediksi pada kondisi normal maupun ketika terjadi kegagalan.
+
+Performance, Maintainability, and Code Quality
+
+AI harus menghindari duplikasi logika, ketergantungan melingkar, Function yang terlalu panjang, Class yang memiliki terlalu banyak tanggung jawab, maupun optimasi prematur yang belum terbukti memberikan manfaat. Seluruh perubahan harus tetap mengikuti prinsip SOLID, Separation of Concerns, Dependency Injection, serta Event Driven Architecture yang telah ditetapkan. Sebelum implementasi dianggap selesai, AI wajib memastikan bahwa kode berhasil melewati Build, Type Checking, Lint, Test, serta Self Review. Seluruh kode yang dihasilkan tidak boleh mengandung komentar kode yang tidak diperlukan, komentar sementara, penanda TODO, FIX, HACK, ataupun Placeholder yang menunjukkan implementasi belum selesai. Kode yang dikirim harus berada pada kondisi siap digunakan sebagai bagian dari sistem produksi.
+
+Acceptance Criteria
+
+Coding Standard dianggap terpenuhi apabila seluruh kode mengikuti struktur proyek yang konsisten, memiliki penamaan yang jelas, memisahkan tanggung jawab setiap Module dengan benar, menerapkan validasi dan Error Handling yang memadai, tidak mengandung komentar kode yang tidak diperlukan, serta mempertahankan keterbacaan dan kualitas implementasi pada seluruh Domain My Dash. Standar ini menjadi acuan utama bagi AI Agent maupun pengembang sehingga seluruh Repository memiliki gaya implementasi yang seragam dan mudah dipelihara.

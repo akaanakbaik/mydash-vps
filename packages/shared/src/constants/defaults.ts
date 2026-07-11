@@ -1,0 +1,25 @@
+import { Severity } from '../enums/severity.js';
+export const DEFAULTS = {
+  SESSION_LIFETIME_HOURS: 24,
+  AI_TIMEOUT_SECONDS: 32,
+  MAX_RETRY_COUNT: 5,
+  HEARTBEAT_INTERVAL_SECONDS: 30,
+  CPU_SAMPLING_INTERVAL_MS: 1000,
+  MEMORY_SAMPLING_INTERVAL_MS: 2000,
+  DISK_SAMPLING_INTERVAL_MS: 5000,
+  NETWORK_SAMPLING_INTERVAL_MS: 1000,
+  HEALTH_CALCULATION_INTERVAL_MS: 10000,
+  NOTIFICATION_COOLDOWN_MS: 600000,
+  QUEUE_POLL_INTERVAL_MS: 1000,
+  TUNNEL_HEALTH_CHECK_INTERVAL_MS: 30000,
+  BACKUP_SCHEDULE_CRON: '0 0 * * *',
+  RULE_COOLDOWN_MS: 900000,
+  SEVERITY_COLORS: {
+    [Severity.Information]: '#3b82f6',
+    [Severity.Success]: '#22c55e',
+    [Severity.Warning]: '#eab308',
+    [Severity.Error]: '#ef4444',
+    [Severity.Critical]: '#dc2626',
+    [Severity.Emergency]: '#991b1b',
+  },
+} as const;

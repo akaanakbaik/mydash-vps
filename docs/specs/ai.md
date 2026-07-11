@@ -1,0 +1,25 @@
+Artificial Intelligence Engineering Specification
+
+Purpose
+
+Artificial Intelligence pada My Dash berfungsi sebagai Decision Support System, bukan sebagai pengendali utama aplikasi. Seluruh fungsi inti seperti Monitoring, Notification, Health Score, Analytics, Queue, Automation, Backup, maupun Security harus tetap berjalan sepenuhnya menggunakan algoritma lokal tanpa ketergantungan pada layanan AI. AI hanya bertugas meningkatkan kualitas pengalaman pengguna melalui analisis, penjelasan, diagnosis, prediksi, rekomendasi optimasi, pembuatan ringkasan, serta bantuan interaktif pada Dashboard. Dengan filosofi ini, My Dash tetap dapat digunakan secara penuh ketika layanan AI mengalami gangguan, koneksi Internet terputus, atau Provider AI tidak tersedia. AI harus diperlakukan sebagai komponen opsional yang memperkaya informasi, bukan sebagai sumber kebenaran maupun pengambil keputusan utama. Seluruh keluaran AI harus dianggap sebagai rekomendasi sampai dapat diverifikasi menggunakan data operasional yang tersedia.
+
+AI Architecture and Provider Abstraction
+
+AI Engine dibangun menggunakan arsitektur Provider yang modular sehingga pengguna dapat memilih berbagai Model maupun layanan tanpa mengubah Business Logic. Core AI menyediakan Prompt Builder, Context Builder, Token Manager, Conversation Manager, Response Validator, Cache Manager, serta Provider Adapter. Setiap Provider hanya bertanggung jawab mengirim Request dan menerima Response sesuai kontrak yang telah ditentukan. AI memperoleh Context dari Monitoring, Analytics, Health Score, Notification, Logging, Audit, GitHub, maupun Domain lain melalui antarmuka yang telah disanitasi sehingga tidak ada Domain yang berkomunikasi langsung dengan Provider AI. Seluruh Prompt dibangun secara deterministik berdasarkan Template yang terdokumentasi sehingga hasil analisis dapat direproduksi dan dikembangkan tanpa mengubah kode Domain lain.
+
+Context Management, Reasoning, and Response Validation
+
+Sebelum AI menerima Request, Engine menyusun Context yang hanya berisi informasi relevan dengan batas ukuran yang dapat dikonfigurasi. Data sensitif seperti Password, Secret, API Key, Session Token, Environment Variable, maupun Credential lain harus dihapus atau disamarkan sebelum dikirim. Setelah Response diterima, AI Engine melakukan Validation terhadap struktur, panjang, format, serta konsistensi jawaban sebelum ditampilkan kepada pengguna. AI tidak diperbolehkan menjalankan perintah sistem secara langsung berdasarkan hasil Model. Apabila AI memberikan rekomendasi Automation atau perubahan konfigurasi, pengguna tetap harus memberikan persetujuan melalui Dashboard. AI juga harus mampu memberikan tingkat Confidence terhadap hasil analisis berdasarkan kelengkapan Context yang diterima sehingga pengguna memahami keterbatasan rekomendasi yang diberikan.
+
+AI Features and Operational Workflow
+
+Fitur utama AI meliputi Diagnosis masalah VPS, Ringkasan Monitoring, Analisis Health Score, Penjelasan Error, Rekomendasi optimasi Resource, Analisis Log, Ringkasan Audit, Bantuan penggunaan Dashboard, Penjelasan hasil Analytics, Ringkasan GitHub Workflow, serta asisten percakapan yang memahami struktur proyek My Dash. AI juga dapat membantu menjelaskan penyebab Notification, memprediksi potensi masalah berdasarkan data historis, menyusun laporan operasional harian, serta membantu Administrator memahami kondisi sistem tanpa harus membaca seluruh Log secara manual. Seluruh Request AI diproses melalui Queue agar tidak mengganggu operasi utama Dashboard, memiliki Timeout yang dapat dikonfigurasi, menggunakan Cache untuk pertanyaan yang identik, serta menghasilkan Logging dan Audit apabila berkaitan dengan aktivitas administratif.
+
+Security, Performance, and Future Compatibility
+
+Seluruh komunikasi dengan Provider AI menggunakan koneksi yang aman serta mengikuti kebijakan privasi yang telah ditentukan. AI tidak boleh menyimpan percakapan lebih lama dari kebijakan Retention yang berlaku dan tidak diperbolehkan mengirim informasi Workspace lain dalam satu Request. Dashboard harus menampilkan Status Provider AI, Latency, Token Usage, Request Count, Error Rate, Cache Hit Ratio, serta biaya estimasi apabila menggunakan Provider berbayar. Arsitektur AI dirancang agar mendukung berbagai Model lokal maupun layanan Cloud melalui Provider Adapter yang sama, sehingga pengguna dapat berpindah Model tanpa mengubah fitur Dashboard. Tujuan akhirnya adalah menjadikan AI sebagai asisten teknis yang cerdas, aman, transparan, dan mudah diperluas tanpa mengorbankan reliabilitas sistem inti.
+
+Acceptance Criteria
+
+AI Engine dianggap memenuhi spesifikasi apabila mampu menyediakan analisis, diagnosis, rekomendasi, dan bantuan interaktif tanpa mengambil alih keputusan inti sistem, mendukung banyak Provider melalui arsitektur modular, melakukan sanitasi Context, validasi Response, Logging, Audit, Queue, Cache, serta menjaga keamanan seluruh informasi sensitif. Implementasi harus memastikan bahwa My Dash tetap berfungsi penuh tanpa AI, sementara kehadiran AI memberikan nilai tambah yang nyata bagi Administrator dalam mengelola VPS dan memahami kondisi operasional sistem.

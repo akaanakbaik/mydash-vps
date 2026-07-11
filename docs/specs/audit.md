@@ -1,0 +1,25 @@
+Audit Engineering Specification
+
+Purpose
+
+Audit Engine merupakan subsistem yang bertugas mencatat seluruh aktivitas penting yang memengaruhi keamanan, konfigurasi, maupun integritas sistem sehingga setiap tindakan dapat ditelusuri kembali secara akurat. Berbeda dengan Logging yang berfokus pada aktivitas teknis aplikasi, Audit berfokus pada siapa melakukan apa, kapan dilakukan, dari mana dilakukan, terhadap objek apa, dan apa hasil akhirnya. Audit wajib merekam Login, Logout, perubahan Password, perubahan Settings, aktivasi maupun penonaktifan Notification Provider, perubahan Tunnel, Backup, Restore, Automation, GitHub Integration, Plugin, User Management, Permission, Workspace, serta seluruh tindakan administratif lainnya. Seluruh Audit Record harus bersifat permanen, tidak dapat diubah secara langsung, dan hanya dapat ditampilkan atau diekspor oleh pengguna yang memiliki Permission yang sesuai. Tujuan utama Audit adalah menjaga akuntabilitas, mendukung investigasi, memenuhi kebutuhan kepatuhan, serta mempermudah analisis ketika terjadi kesalahan ataupun penyalahgunaan sistem.
+
+Audit Record Structure
+
+Setiap Audit Record wajib memiliki Audit ID, Timestamp UTC, Workspace ID, User ID, Session ID, Device Information apabila tersedia, IP Address apabila tersedia, Module, Action, Target Resource, Previous State, New State, Result, Severity, Correlation ID, serta Metadata tambahan yang relevan. Seluruh perubahan konfigurasi harus menyimpan nilai sebelum dan sesudah perubahan sehingga Administrator dapat mengetahui secara tepat apa yang telah dimodifikasi. Audit juga harus membedakan antara tindakan Manual, Automation, Scheduler, AI Recommendation, maupun proses Internal System sehingga asal setiap perubahan selalu dapat diidentifikasi. Seluruh Record menggunakan struktur yang konsisten agar Dashboard dapat melakukan pencarian, penyaringan, pengurutan, dan ekspor tanpa memerlukan transformasi tambahan.
+
+Audit Lifecycle and Data Integrity
+
+Audit dibuat segera setelah suatu tindakan berhasil divalidasi dan sebelum proses dianggap selesai. Setelah Record terbentuk, Engine melakukan Validasi, Normalisasi, Penyimpanan ke Database, Distribusi Event apabila diperlukan, kemudian memperbarui Dashboard secara Realtime melalui WebSocket. Audit tidak boleh gagal hanya karena salah satu Domain lain mengalami gangguan. Apabila Database sementara tidak tersedia, Record dapat ditampung melalui Queue hingga penyimpanan kembali normal. Seluruh Audit Record bersifat Append Only sehingga tidak boleh diedit maupun dihapus melalui Dashboard kecuali mengikuti kebijakan Retention yang telah ditentukan. Pendekatan ini menjaga integritas riwayat perubahan serta mencegah manipulasi terhadap bukti aktivitas sistem.
+
+Search, Reporting, and Compliance
+
+Dashboard menyediakan halaman Audit dengan kemampuan Filter berdasarkan Rentang Waktu, Workspace, User, Action, Module, Severity, Correlation ID, maupun Target Resource. Administrator dapat melihat Timeline aktivitas, membandingkan perubahan konfigurasi, mengekspor hasil Audit ke berbagai format yang didukung, serta membuat laporan untuk kebutuhan operasional maupun kepatuhan. Audit juga menjadi sumber data bagi Analytics untuk menghitung aktivitas Administrator, frekuensi perubahan konfigurasi, tren penggunaan fitur, maupun deteksi aktivitas yang tidak biasa. AI hanya digunakan untuk membantu menyusun Ringkasan Audit atau menjelaskan pola aktivitas apabila diminta pengguna, sedangkan seluruh Record Audit tetap berasal dari proses deterministik sistem.
+
+Security, Retention, and Reliability
+
+Seluruh Audit Record harus dilindungi dari perubahan yang tidak sah, tidak boleh menyimpan Password, Secret, Token, ataupun informasi sensitif lainnya dalam bentuk asli, serta mengikuti kebijakan Retention yang dapat dikonfigurasi sesuai kebutuhan. Engine wajib memantau jumlah Record, ukuran penyimpanan, kecepatan penulisan, serta keberhasilan distribusi Event agar Audit tetap tersedia pada kondisi beban tinggi. Apabila terjadi kegagalan saat membuat Audit, sistem harus memberikan peringatan kepada Administrator karena hilangnya Audit dapat memengaruhi kemampuan investigasi. Arsitektur Audit juga harus mendukung penambahan jenis Action baru tanpa memerlukan perubahan pada struktur dasar Record.
+
+Acceptance Criteria
+
+Audit Engine dianggap memenuhi spesifikasi apabila mampu mencatat seluruh aktivitas administratif dan keamanan menggunakan Record yang konsisten, bersifat Append Only, mendukung pencarian, penyaringan, ekspor, Realtime Update, Retention, serta integrasi dengan Analytics dan Dashboard. Implementasi harus menjaga integritas data, tidak menyimpan informasi sensitif secara tidak aman, serta memberikan kemampuan pelacakan aktivitas yang lengkap sehingga setiap perubahan penting pada My Dash dapat dipertanggungjawabkan dan dianalisis kembali kapan pun diperlukan.

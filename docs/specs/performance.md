@@ -1,0 +1,25 @@
+Performance Engineering Specification
+
+Purpose
+
+Performance merupakan salah satu indikator utama kualitas My Dash karena Dashboard dirancang untuk berjalan selama dua puluh empat jam setiap hari tanpa penurunan responsivitas. Seluruh modul harus dirancang agar ringan, efisien, dan dapat diprediksi performanya meskipun jumlah Workspace, VPS, Event, Notification, maupun pengguna terus bertambah. Optimasi tidak dilakukan berdasarkan asumsi, tetapi berdasarkan hasil pengukuran yang nyata. Target utama adalah mempertahankan penggunaan CPU Backend tetap rendah ketika Idle, menjaga penggunaan Memory stabil tanpa Memory Leak, mengurangi I/O Disk yang tidak perlu, meminimalkan Query Database, meningkatkan Cache Hit Ratio, serta mempertahankan pengalaman pengguna yang tetap mulus pada perangkat Desktop maupun Mobile. Seluruh keputusan optimasi harus mempertimbangkan keseimbangan antara kecepatan, konsumsi Resource, dan kemudahan pemeliharaan jangka panjang.
+
+Performance Targets and Measurement
+
+Setiap Domain memiliki Target performa yang jelas dan dapat diuji. Dashboard harus mampu melakukan Initial Render dengan cepat, Widget Realtime harus menerima pembaruan tanpa lag yang terasa, REST API harus mempertahankan latensi rendah pada operasi normal, sedangkan WebSocket harus mampu menangani ribuan Event dengan penggunaan Resource yang stabil. Monitoring Engine, Analytics, Notification, Automation, dan Worker lainnya harus berjalan secara Asynchronous sehingga pekerjaan berat tidak pernah memblokir Request pengguna. AI wajib mengukur Response Time, Throughput, Memory Usage, CPU Usage, Queue Delay, WebSocket Latency, Database Query Time, Redis Hit Ratio, Garbage Collection, Event Processing Time, serta Frame Rate antarmuka agar setiap penurunan performa dapat dideteksi sebelum memengaruhi pengguna.
+
+Optimization Strategy
+
+Seluruh optimasi mengikuti prinsip mengurangi pekerjaan yang tidak perlu. Frontend hanya merender Widget yang berubah, menggunakan Lazy Loading untuk halaman tertentu, melakukan Code Splitting, Memoization, serta Virtualization pada daftar berukuran besar. Backend menggunakan Connection Pool, Prepared Statement, Batch Processing, Worker Queue, Cache Realtime, serta Event Driven Architecture untuk mengurangi beban Database. Monitoring melakukan Sampling sesuai karakteristik Metric, Analytics menggunakan Aggregation bertingkat, sedangkan Notification menggunakan Queue agar proses pengiriman tidak menghambat Dashboard. AI tidak diperbolehkan melakukan optimasi yang mengurangi keterbacaan kode secara signifikan apabila manfaat performanya tidak dapat dibuktikan melalui Benchmark.
+
+Scalability, Stress Handling, and Resource Efficiency
+
+Arsitektur harus mampu berkembang secara horizontal dengan menambah Worker atau Instance baru tanpa perubahan besar pada kode. Sistem harus tetap stabil ketika terjadi lonjakan Event, peningkatan jumlah Server, atau banyak pengguna membuka Dashboard secara bersamaan. Queue menjadi mekanisme utama untuk menyerap lonjakan beban sehingga proses penting tetap berjalan secara bertahap. Dashboard juga harus memantau Resource internal seperti CPU Backend, Memory Backend, Worker Count, Queue Length, Event Throughput, Database Connection, Redis Connection, WebSocket Client, serta penggunaan Storage sehingga Administrator dapat mengetahui kapasitas sistem secara Realtime. Seluruh komponen harus memiliki batas penggunaan Resource yang jelas agar tidak saling mengganggu ketika terjadi beban tinggi.
+
+Continuous Profiling and Performance Validation
+
+Setiap perubahan kode harus melalui proses Build, Benchmark, Profiling, dan Performance Regression Test untuk memastikan tidak terjadi penurunan performa dibanding versi sebelumnya. AI wajib mengidentifikasi Bottleneck berdasarkan data Profiling, bukan berdasarkan dugaan, kemudian memilih solusi dengan dampak terbesar terhadap keseluruhan sistem. Hasil Benchmark disimpan sebagai bagian dari riwayat proyek sehingga perkembangan performa dapat diamati dari waktu ke waktu. Tujuan akhir Performance Engineering adalah memastikan My Dash mampu memberikan pengalaman yang cepat, stabil, hemat Resource, dan tetap responsif pada VPS dengan spesifikasi rendah maupun tinggi tanpa mengorbankan keamanan, reliabilitas, ataupun kemudahan pengembangan di masa mendatang.
+
+Acceptance Criteria
+
+Spesifikasi performa dianggap terpenuhi apabila seluruh Domain memenuhi Target latensi dan penggunaan Resource yang telah ditetapkan, Dashboard tetap responsif selama penggunaan jangka panjang, Worker berjalan secara Asynchronous, Queue mampu menyerap lonjakan beban, Benchmark dan Profiling dilakukan secara berkala, serta seluruh keputusan optimasi didasarkan pada hasil pengukuran yang dapat diverifikasi. Implementasi harus mampu mempertahankan performa yang konsisten ketika jumlah Workspace, VPS, maupun Event terus bertambah sehingga My Dash siap digunakan pada lingkungan produksi berskala besar.

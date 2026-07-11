@@ -1,0 +1,25 @@
+Design System Engineering Specification
+
+Purpose
+
+Design System merupakan standar visual tunggal yang mengatur seluruh identitas antarmuka My Dash sehingga setiap halaman, komponen, animasi, ikon, warna, maupun tata letak memiliki konsistensi yang tinggi. Seluruh elemen visual harus dibangun menggunakan Design Token dan tidak diperbolehkan menggunakan nilai acak secara langsung di dalam komponen. Filosofi desain My Dash adalah Modern Infrastructure Dashboard, yaitu tampilan profesional, bersih, ringan, mudah dibaca, serta mampu menampilkan banyak informasi tanpa membuat pengguna merasa kewalahan. Tema utama menggunakan Dark Mode sebagai standar bawaan dengan kombinasi hitam yang lembut, abu-abu gelap, serta aksen biru tua yang elegan. Gradient, Glassmorphism berlebihan, Glow yang mencolok, maupun animasi dekoratif yang tidak memiliki fungsi harus dihindari agar Dashboard tetap fokus pada informasi operasional VPS.
+
+Color System, Typography, and Spacing
+
+Seluruh warna berasal dari Color Token yang telah ditentukan seperti Primary, Secondary, Success, Warning, Danger, Information, Background, Surface, Border, dan Text. Warna tidak boleh digunakan hanya karena terlihat menarik, tetapi harus memiliki makna fungsional yang konsisten di seluruh aplikasi. Sebagai contoh hijau selalu menunjukkan keadaan sehat atau berhasil, kuning menunjukkan perhatian, merah menunjukkan kondisi kritis, sedangkan biru digunakan sebagai identitas utama sistem. Typography menggunakan hierarki yang jelas mulai dari Display, Heading, Title, Body, Caption, hingga Label sehingga pengguna dapat memahami prioritas informasi hanya melalui ukuran dan ketebalan teks. Sistem Spacing menggunakan skala yang konsisten untuk Margin, Padding, Gap, Grid, dan ukuran komponen sehingga setiap halaman memiliki ritme visual yang sama tanpa terlihat berantakan.
+
+Iconography, Animation, and Visual Feedback
+
+Seluruh ikon harus berasal dari satu pustaka yang konsisten serta memiliki gaya visual yang sama. Ikon hanya digunakan untuk memperjelas informasi, bukan menggantikan teks sepenuhnya. Animasi dirancang untuk mendukung pemahaman pengguna terhadap perubahan keadaan seperti munculnya Notification, perubahan Health Score, perpindahan halaman, pembaruan grafik, ataupun keberhasilan suatu tindakan. Durasi animasi harus singkat, halus, dan tidak mengganggu aktivitas utama. Dashboard menghindari animasi yang terus bergerak tanpa alasan karena dapat meningkatkan penggunaan CPU Browser dan mengurangi fokus pengguna. Seluruh Feedback visual seperti Hover, Focus, Loading, Success, Warning, Error, maupun Disabled mengikuti pola yang sama sehingga pengalaman pengguna tetap konsisten pada seluruh halaman.
+
+Layout Principles and Responsive Grid
+
+Seluruh halaman menggunakan Grid responsif yang mampu menyesuaikan jumlah kolom berdasarkan ukuran layar tanpa mengubah struktur informasi utama. Widget memiliki ukuran minimum dan maksimum yang konsisten sehingga Dashboard tetap rapi baik pada perangkat Mobile maupun Desktop. Card menjadi elemen dasar untuk menampilkan informasi dan harus memiliki Radius, Border, Shadow, serta Padding yang seragam. Sidebar mendukung Mode Expanded dan Compact, sedangkan halaman Monitoring, Analytics, Backup, Notification, dan Settings menggunakan Layout yang konsisten agar pengguna tidak perlu mempelajari pola navigasi baru setiap kali berpindah halaman. AI wajib menghindari penggunaan ruang kosong yang berlebihan maupun kepadatan informasi yang membuat Dashboard sulit dibaca.
+
+Theming, Maintainability, and Future Expansion
+
+Seluruh nilai visual disimpan sebagai Design Token sehingga perubahan identitas visual cukup dilakukan pada satu tempat tanpa memodifikasi ratusan komponen. Arsitektur Theme harus mendukung penambahan tema baru di masa depan tanpa memengaruhi Business Logic maupun struktur komponen. Dashboard juga harus mendukung preferensi pengguna seperti kepadatan tampilan, ukuran font tertentu, ataupun pengaturan animasi yang lebih ringan apabila diperlukan. Seluruh keputusan desain harus mempertimbangkan performa Rendering, aksesibilitas, kemudahan pemeliharaan, serta konsistensi lintas halaman sehingga My Dash tetap memiliki identitas visual yang profesional meskipun terus berkembang.
+
+Acceptance Criteria
+
+Design System dianggap memenuhi spesifikasi apabila seluruh halaman dan komponen menggunakan Design Token yang sama, memiliki hierarki warna dan tipografi yang konsisten, mendukung Layout responsif, menggunakan animasi yang fungsional, mempertahankan identitas Modern Dark tanpa Gradient berlebihan, serta memungkinkan perubahan tema tanpa mengubah implementasi komponen. Seluruh antarmuka harus memberikan pengalaman visual yang seragam, mudah dikenali, dan mendukung produktivitas Administrator dalam mengelola VPS melalui Dashboard My Dash.

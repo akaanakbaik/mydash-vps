@@ -1,0 +1,25 @@
+Algorithm Engineering Specification
+
+Purpose
+
+Seluruh algoritma pada My Dash harus bersifat deterministik, dapat diuji, dapat dijelaskan, dan memiliki kompleksitas yang dapat diprediksi. AI hanya berfungsi sebagai lapisan analisis tambahan dan tidak pernah menggantikan algoritma inti sistem. Semua keputusan utama seperti Health Score, Threshold, Retry, Queue Priority, Resource Classification, Recovery Decision, Prediction dasar, Notification Trigger, dan Automation Rule harus dapat dihitung menggunakan algoritma lokal tanpa koneksi Internet. AI hanya menambahkan penjelasan, diagnosis, rekomendasi, atau prediksi lanjutan apabila tersedia dan berhasil merespons dalam waktu maksimal tiga puluh dua detik. Dengan pendekatan ini My Dash tetap berfungsi penuh meskipun seluruh layanan AI sedang tidak tersedia, mengalami Timeout, atau mengembalikan respons yang tidak valid.
+
+Mathematical Foundation
+
+Seluruh perhitungan menggunakan dasar matematika yang konsisten agar hasil tidak berubah hanya karena implementasi berbeda. Health Score dihitung menggunakan Weighted Score yang dapat dikonfigurasi, Trend menggunakan Moving Average dan Exponential Moving Average untuk mengurangi Noise, Outlier dideteksi menggunakan Z-Score atau Interquartile Range sesuai karakteristik data, Confidence Score dihitung berdasarkan jumlah Collector yang aktif dibanding total Collector, sedangkan Prediction sederhana dapat menggunakan Linear Regression terhadap data historis sebelum AI memberikan analisis tambahan. Retry menggunakan Exponential Backoff dengan batas maksimum yang dapat dikonfigurasi, Priority Queue dihitung dari kombinasi Severity, Impact, Urgency, dan Confidence, sedangkan Resource Efficiency Index diperoleh dari hubungan antara penggunaan CPU, RAM, Disk, I/O, dan Network sehingga Dashboard tidak hanya melihat satu metrik secara terpisah tetapi keseluruhan kondisi sistem.
+
+Decision Engine
+
+Setiap keputusan mengikuti urutan yang tetap yaitu Data Collection, Validation, Normalization, Feature Extraction, Rule Evaluation, Mathematical Calculation, Confidence Evaluation, Decision Generation, Event Publishing, kemudian AI Enhancement apabila diperlukan. Tidak ada keputusan yang langsung dibuat berdasarkan satu metrik tunggal. Sebagai contoh CPU tinggi tidak otomatis menghasilkan Warning karena algoritma juga harus mempertimbangkan jenis server, beban historis, waktu operasional, Trend beberapa menit terakhir, konfigurasi pengguna, serta kondisi Resource lain. Pendekatan ini mengurangi False Positive dan False Negative sehingga pengguna hanya menerima pemberitahuan yang benar-benar relevan. Seluruh algoritma wajib memiliki Output yang dapat dijelaskan sehingga AI maupun Dashboard mampu menunjukkan alasan mengapa suatu keputusan diambil.
+
+Complexity and Optimization
+
+AI wajib memilih algoritma dengan kompleksitas serendah mungkin tanpa mengorbankan akurasi. Lookup menggunakan struktur yang mendekati O(1), pencarian terindeks mendekati O(log n), sedangkan proses agregasi dilakukan secara bertahap agar tidak memerlukan Full Scan berulang pada data historis. Ring Buffer digunakan untuk menyimpan Metric Realtime sehingga penggunaan Memory tetap stabil, Sliding Window digunakan pada Analytics jangka pendek, sedangkan Historical Aggregation digunakan untuk mengurangi ukuran penyimpanan jangka panjang. AI tidak boleh menggunakan algoritma yang memiliki kompleksitas kuadrat atau eksponensial apabila tersedia alternatif yang lebih efisien, terutama pada Monitoring, Notification, Queue, dan Health Calculation yang berjalan terus-menerus selama sistem aktif.
+
+Reliability, Recovery, and Validation
+
+Seluruh algoritma wajib melalui proses Validasi Input sebelum dijalankan. Nilai tidak valid, Data kosong, NaN, Infinity, Timestamp tidak sinkron, ataupun Outlier ekstrem harus ditangani terlebih dahulu sehingga tidak menghasilkan keputusan yang salah. Apabila sebagian Collector gagal, algoritma tetap berjalan menggunakan data yang tersedia kemudian menurunkan Confidence Score tanpa menghentikan Dashboard. Seluruh hasil algoritma harus dapat direproduksi menggunakan Input yang sama sehingga mempermudah Testing, Audit, dan Root Cause Analysis. AI wajib menyediakan Unit Test untuk setiap algoritma penting, Benchmark untuk performa, serta simulasi terhadap kondisi normal, beban tinggi, Recovery, dan kegagalan sebagian sistem agar kualitas algoritma tetap terjaga seiring berkembangnya proyek.
+
+Acceptance Criteria
+
+Spesifikasi algoritma dianggap terpenuhi apabila seluruh keputusan inti My Dash dapat dihasilkan tanpa ketergantungan pada AI, memiliki dasar matematika yang jelas, dapat diuji secara otomatis, mampu menjelaskan alasan setiap keputusan, mempertahankan performa pada jumlah Server yang besar, mengurangi False Alert, mendukung Recovery ketika sebagian data tidak tersedia, serta tetap konsisten pada berbagai kondisi operasional. AI hanya diperbolehkan meningkatkan kualitas analisis, bukan menggantikan algoritma utama yang telah didefinisikan pada spesifikasi ini.

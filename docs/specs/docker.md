@@ -1,0 +1,25 @@
+Docker Integration Engineering Specification
+
+Purpose
+
+Docker Integration memungkinkan My Dash mengelola seluruh Container, Image, Network, Volume, dan Docker Compose secara terpusat tanpa meninggalkan Dashboard. Tujuannya bukan menggantikan seluruh fungsi Docker CLI, melainkan menyediakan antarmuka operasional yang aman, cepat, dan mudah dipahami untuk aktivitas yang paling sering dilakukan Administrator. Seluruh operasi Docker harus melalui Backend menggunakan API atau Docker Socket yang telah diverifikasi, bukan dijalankan langsung dari Browser. Dashboard harus mampu menampilkan daftar Container, Status, Resource Usage, Port Mapping, Volume, Network, Restart Policy, Health Check, serta Log Realtime. Pengguna juga dapat melakukan Start, Stop, Restart, Pause, Resume, Recreate, Pull Image, Remove, maupun Deploy Docker Compose sesuai Permission yang dimiliki. Semua tindakan menghasilkan Event, Notification, Logging, dan Audit sehingga seluruh perubahan terhadap lingkungan Container dapat ditelusuri kembali.
+
+Container Management and Lifecycle
+
+Setiap Container diperlakukan sebagai Resource yang memiliki Container ID, Name, Image, Tag, Status, Health Status, Created Time, Started Time, Restart Count, Exit Code, CPU Usage, Memory Usage, Network Usage, Disk Usage, Mount Point, Environment Variable yang telah disanitasi, serta Metadata lain yang diperlukan Dashboard. Siklus hidup Container dimulai dari Discovery, Monitoring, Action Request, Validation, Queue Submission, Execution, Verification, Event Publishing, hingga State Synchronization. Dashboard harus mampu mendeteksi perubahan yang dilakukan di luar My Dash, misalnya melalui Docker CLI, sehingga informasi yang ditampilkan selalu sesuai dengan keadaan sebenarnya. AI wajib memastikan bahwa seluruh perubahan dilakukan secara idempotent sehingga pengiriman Request ganda tidak menghasilkan keadaan yang tidak konsisten.
+
+Monitoring, Compose, and Resource Analysis
+
+Docker Integration harus melakukan Monitoring terhadap CPU, Memory, Network, Disk I/O, Restart Count, Health Check, Exit Status, serta Log setiap Container secara berkala. Docker Compose diperlakukan sebagai satu Deployment Group sehingga pengguna dapat mengelola beberapa Container sekaligus menggunakan satu tindakan seperti Up, Down, Restart, Pull, maupun Recreate. Dashboard juga menyediakan analisis penggunaan Resource berdasarkan Image, Service, maupun Project sehingga Administrator dapat mengetahui Container yang paling banyak menggunakan CPU, RAM, ataupun Storage. Seluruh Metric dikirim ke Monitoring Engine dan Analytics melalui Event Bus sehingga Docker menjadi bagian dari ekosistem observabilitas My Dash, bukan subsistem yang berdiri sendiri.
+
+Security, Permission, and Reliability
+
+Docker memiliki hak akses tinggi terhadap sistem operasi sehingga seluruh operasi harus melewati Permission Validation yang ketat. Hanya pengguna dengan Role tertentu yang diperbolehkan membuat, menghapus, ataupun menjalankan Container. Dashboard tidak boleh menampilkan Secret, Password, maupun Environment Variable sensitif secara langsung. Seluruh operasi yang berpotensi merusak seperti Remove Container, Remove Volume, Prune, ataupun Force Recreate harus meminta konfirmasi tambahan dan menghasilkan Audit Record lengkap. Apabila Docker Daemon tidak tersedia, Dashboard tetap dapat diakses, namun seluruh halaman Docker menampilkan Status Degraded beserta penyebabnya tanpa memengaruhi Domain lain seperti Monitoring, Notification, ataupun Analytics.
+
+Performance, Extensibility, and Future Compatibility
+
+Docker Integration harus menggunakan koneksi yang efisien dan menghindari pengambilan informasi yang sama secara berulang. Data yang sering digunakan dapat disimpan sementara melalui Redis dengan TTL yang sesuai, sedangkan perubahan penting didistribusikan menggunakan Event dan WebSocket. Arsitektur harus memungkinkan penambahan dukungan untuk Docker Swarm, Kubernetes, Podman, ataupun Runtime lain di masa depan melalui Driver yang mengikuti kontrak yang sama. AI wajib memastikan bahwa seluruh integrasi bersifat modular, mudah diuji, serta tidak bergantung pada implementasi Docker tertentu sehingga Dashboard tetap fleksibel mengikuti perkembangan teknologi Container.
+
+Acceptance Criteria
+
+Docker Integration dianggap memenuhi spesifikasi apabila mampu mendeteksi dan mengelola Container, Image, Network, Volume, serta Docker Compose secara aman, mendukung Monitoring Realtime, Queue, Notification, Logging, Audit, Permission, dan Event Bus, serta mampu menampilkan penggunaan Resource secara akurat melalui Dashboard. Implementasi harus tetap stabil ketika jumlah Container meningkat, menjaga keamanan operasi administratif, dan memberikan pengalaman pengelolaan Container yang cepat, konsisten, dan mudah dipahami oleh Administrator My Dash.

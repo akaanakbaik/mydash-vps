@@ -1,0 +1,25 @@
+Backup Engineering Specification
+
+Purpose
+
+Backup Engine merupakan mekanisme perlindungan data utama pada My Dash yang memastikan seluruh informasi penting dapat dipulihkan apabila terjadi kerusakan sistem, kesalahan pengguna, kegagalan perangkat keras, ataupun pembaruan yang menyebabkan inkonsistensi. Backup tidak hanya mencakup PostgreSQL, tetapi juga konfigurasi Dashboard, Workspace, Notification Rule, Automation Rule, Tunnel Configuration, GitHub Integration, Plugin Configuration, Redis Snapshot apabila diperlukan, Environment yang telah disanitasi, serta Metadata sistem yang dibutuhkan untuk proses Recovery. Backup harus dapat dijalankan secara Manual maupun Otomatis melalui Scheduler dengan beberapa jenis Backup seperti Full Backup, Incremental Backup, Differential Backup, dan Configuration Backup. Setiap Backup wajib memiliki Metadata lengkap seperti Version, Timestamp UTC, Workspace, Ukuran, Durasi, Status, Checksum, Encryption Status, Compression Ratio, serta Compatibility Version agar proses Restore dapat dilakukan dengan aman pada versi My Dash yang sesuai.
+
+Backup Lifecycle and Storage Strategy
+
+Siklus hidup Backup dimulai dari Validation, Resource Lock ringan apabila diperlukan, Snapshot Preparation, Data Collection, Compression, Encryption, Integrity Verification, Metadata Generation, Storage, Notification, hingga Cleanup. Sebelum proses dimulai, Engine memverifikasi kapasitas Disk, Status Database, Status Worker, serta memastikan tidak terdapat proses Restore yang sedang berjalan. Backup harus berjalan melalui Queue sehingga tidak mengganggu Dashboard maupun Monitoring. Pengguna dapat menentukan lokasi penyimpanan seperti Local Storage, Mounted Disk, atau penyimpanan lain yang didukung di masa depan melalui Driver Storage. Sistem juga mendukung Rotation Policy sehingga Backup lama dapat dihapus secara otomatis berdasarkan jumlah maksimum, usia Backup, atau kapasitas penyimpanan yang tersedia tanpa menghapus Backup penting yang masih berada dalam masa retensi.
+
+Integrity, Encryption, and Verification
+
+Setiap berkas Backup harus diverifikasi menggunakan Checksum sebelum dinyatakan berhasil. Apabila pengguna mengaktifkan Encryption, seluruh isi Backup dienkripsi sebelum disimpan sehingga tidak dapat dibaca tanpa kunci yang benar. Engine juga wajib menjalankan Verification setelah Backup selesai dengan memastikan struktur arsip lengkap, Metadata sesuai, serta seluruh komponen yang diwajibkan berhasil disimpan. Dashboard menampilkan informasi seperti Progress Backup secara Realtime, Kecepatan penulisan, Estimasi waktu selesai, Ukuran akhir, Rasio kompresi, serta hasil verifikasi integritas. AI tidak diperbolehkan menganggap Backup berhasil hanya karena proses kompresi selesai; keberhasilan baru dinyatakan setelah seluruh tahapan verifikasi berhasil dilewati.
+
+Automation, Monitoring, and Recovery Preparation
+
+Backup dapat dijalankan berdasarkan Scheduler, Trigger tertentu, ataupun permintaan manual pengguna. Contohnya Backup harian Database, Backup mingguan penuh, Backup sebelum Upgrade, Backup sebelum Restore, ataupun Backup sebelum menjalankan Automation berisiko tinggi. Seluruh proses menghasilkan Event yang dikonsumsi oleh Notification, Analytics, Audit, dan Dashboard sehingga pengguna memperoleh informasi secara langsung. Engine juga memantau Durasi Backup, Kecepatan baca dan tulis, Tingkat kompresi, Jumlah Backup aktif, Kapasitas penyimpanan, serta rasio keberhasilan Backup. Apabila proses gagal, Engine melakukan Cleanup terhadap berkas sementara, mencatat penyebab kegagalan, kemudian menjalankan Retry apabila sesuai konfigurasi tanpa merusak Backup yang telah ada sebelumnya.
+
+Performance, Scalability, and Future Compatibility
+
+Backup Engine harus dirancang agar mampu menangani Database berukuran besar tanpa menghentikan layanan utama lebih lama dari yang diperlukan. Seluruh pekerjaan berat dilakukan menggunakan Worker terpisah dan Queue sehingga pengguna tetap dapat menggunakan Dashboard selama Backup berlangsung. Arsitektur Storage Driver memungkinkan penambahan tujuan penyimpanan baru seperti Object Storage, Network Storage, ataupun Cloud Storage tanpa mengubah Core Engine. Seluruh format Metadata harus kompatibel dengan beberapa versi My Dash sehingga proses migrasi maupun Upgrade tetap dapat memanfaatkan Backup lama apabila masih berada dalam rentang kompatibilitas yang telah ditentukan.
+
+Acceptance Criteria
+
+Backup Engine dianggap memenuhi spesifikasi apabila mampu menghasilkan Backup yang lengkap, terverifikasi, terenkripsi sesuai konfigurasi, mendukung Full, Incremental, Differential, serta Configuration Backup, menyediakan Scheduler, Queue, Monitoring, Notification, Audit, Rotation Policy, dan Metadata yang lengkap. Seluruh proses harus berjalan secara aman, dapat dipantau secara Realtime, tidak mengganggu operasional Dashboard, serta menghasilkan Backup yang benar-benar siap digunakan untuk proses Restore pada kondisi darurat maupun migrasi sistem.
