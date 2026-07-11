@@ -28,6 +28,10 @@ COPY packages/frontend/ packages/frontend/
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/packages/frontend/node_modules /app/packages/frontend/node_modules
 COPY --from=shared-builder /app/packages/shared/dist /app/packages/shared/dist
+# Copy shared package.json + src + tsconfig for workspace symlink resolution (@mydash/shared)
+COPY packages/shared/tsconfig.json packages/shared/
+COPY packages/shared/package.json packages/shared/
+COPY packages/shared/src/ packages/shared/src/
 COPY --from=configs /app/tsconfig.base.json ./
 # Skip tsc -b in Docker (project references need full source tree), just run vite build
 RUN cd packages/frontend && bunx vite build
@@ -38,6 +42,10 @@ COPY packages/backend/ packages/backend/
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/packages/backend/node_modules /app/packages/backend/node_modules
 COPY --from=shared-builder /app/packages/shared/dist /app/packages/shared/dist
+# Copy shared package.json + src + tsconfig for workspace symlink resolution
+COPY packages/shared/tsconfig.json packages/shared/
+COPY packages/shared/package.json packages/shared/
+COPY packages/shared/src/ packages/shared/src/
 COPY --from=configs /app/tsconfig.base.json ./
 RUN bun run --cwd packages/backend build
 
@@ -54,6 +62,8 @@ COPY --from=backend-builder /app/node_modules ./node_modules
 COPY --from=backend-builder /app/packages/backend/node_modules ./packages/backend/node_modules
 COPY --from=shared-builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=shared-builder /app/packages/shared/package.json ./packages/shared/
+# Patch shared package.json to point main to dist/index.js (not src/index.ts)
+RUN sed -i 's|"./src/index.ts"|"./dist/index.js"|g' /app/packages/shared/package.json
 COPY --from=frontend-builder /app/packages/frontend/dist ./packages/frontend/dist
 COPY package.json ./
 
@@ -63,4 +73,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -sf http://localhost:4000/health || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["bun", "run", "packages/backend/dist/index.js"]
+CMD ["bun", "run", "packages/backend/dist/main.js"]

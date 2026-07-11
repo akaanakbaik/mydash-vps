@@ -382,7 +382,7 @@ phase12_output() {
     log "ngrok detected — starting tunnel..."
     pm2 stop mydashvps-ngrok 2>/dev/null || true
     pm2 delete mydashvps-ngrok 2>/dev/null || true
-    pm2 start "$(which ngrok)" --name mydashvps-ngrok -- http "${PORT_APP}" --log=stdout 2>/dev/null
+    pm2 start "$(which ngrok)" --name mydashvps-ngrok -- http "${PORT_APP}" --log=stdout
     sleep 4
     TUNNEL_URL=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -oP '"public_url":"[^"]+' | head -1 | sed 's/"public_url":"//')
   fi

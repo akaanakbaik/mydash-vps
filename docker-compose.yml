@@ -30,7 +30,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6380}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -58,14 +58,15 @@ services:
       HOST: 0.0.0.0
       DATABASE_URL: postgresql://mydash:${DB_PASSWORD:-mydash_prod_2024}@postgres:5432/mydash
       REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
-      JWT_SECRET: ${JWT_SECRET:-}
+
+      JWT_SECRET: ${JWT_SECRET:-mydash-docker-dev-jwt-secret-change-in-production}
       LOG_LEVEL: info
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:4000/health"]
