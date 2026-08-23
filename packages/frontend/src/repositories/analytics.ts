@@ -83,8 +83,8 @@ export interface AnalyticsResponse {
   categories: { id: string; label: string }[];
 }
 export const analyticsRepository = {
-  getSummary: () =>
-    apiClient.get<AnalyticsResponse>('/analytics'),
+  getSummary: (range = '7d') =>
+    apiClient.get<AnalyticsResponse>('/analytics', { params: { range } }),
   getTrends: (metric: string, range: string) =>
     apiClient.get<TrendPoint[]>(`/analytics/trends/${metric}`, { params: { range } }),
   getAnomalies: () =>

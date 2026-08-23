@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { sendOk, sendError, createRequestContext, broadcastEvent } from '../../transport/http/response.js';
 import { createUseCaseContext } from '../../application/usecases/base.js';
+import { resolveSystemWorkspaceId } from '../../infrastructure/systemMetrics/collector.js';
 type DI = { resolve: (key: string) => unknown };
 type UseCase<TIn, TOut> = { execute: (input: TIn, context: ReturnType<typeof createUseCaseContext>) => Promise<{ success: boolean; data: TOut | null; error: unknown }> };
 
@@ -177,51 +178,126 @@ function defaultAudit() {
     records: [], timeline: [], filterActions: [], filterResources: [], filterUsers: [],
   };
 }
+type SettingValue = string | boolean | number;
+type SettingsConfig = Record<string, Record<string, unknown>>;
+function defaultConfiguration(): SettingsConfig {
+  return {
+    system: { nodeEnv: 'production', port: 4000, host: '0.0.0.0', timezone: 'UTC', logLevel: 'info', logRetentionDays: 30 },
+    monitoring: { cpuSamplingIntervalMs: 10000, memorySamplingIntervalMs: 10000, diskSamplingIntervalMs: 60000, networkSamplingIntervalMs: 10000, snapshotIntervalMs: 60000 },
+    notification: { enabled: false, workerCount: 1, maxRetry: 3, aiTimeoutSeconds: 30, defaultCooldownMs: 300000, rateLimitPerMinute: 30 },
+    tunnel: { primaryProvider: 'cloudflare', fallbackProvider: '', healthCheckIntervalMs: 30000, maxRetry: 3, autoReconnect: true },
+    authentication: { sessionLifetimeHours: 24, maxLoginAttempts: 5, bruteForceCooldownMs: 900000, passwordMinLength: 12 },
+    security: { rateLimitRequestsPerMinute: 60, corsAllowedOrigins: [], encryptionEnabled: true },
+  };
+}
+function asConfig(value: unknown): SettingsConfig {
+  const base = defaultConfiguration();
+  if (!value || typeof value !== 'object') return base;
+  for (const [section, sectionValue] of Object.entries(value as Record<string, unknown>)) {
+    if (sectionValue && typeof sectionValue === 'object' && !Array.isArray(sectionValue)) {
+      base[section] = { ...(base[section] ?? {}), ...(sectionValue as Record<string, unknown>) };
+    }
+  }
+  return base;
+}
+function settingValue(value: unknown): SettingValue | null {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
+}
+function readSetting(config: SettingsConfig, section: string, key: string): SettingValue {
+  const value = config[section]?.[key];
+  return settingValue(value) ?? '';
+}
+function applySettingUpdates(config: SettingsConfig, updates: unknown): SettingsConfig {
+  const next = asConfig(config);
+  if (!Array.isArray(updates)) return next;
+  for (const item of updates) {
+    if (!item || typeof item !== 'object') continue;
+    const update = item as Record<string, unknown>;
+    const id = typeof update.id === 'string' ? update.id : '';
+    const value = settingValue(update.value);
+    const [section, key] = id.split('.', 2);
+    if (!section || !key || value === null) continue;
+    if (!next[section]) next[section] = {};
+    if (Object.prototype.hasOwnProperty.call(next[section], key)) next[section][key] = value;
+  }
+  return next;
+}
+function settingsView(value: unknown) {
+  const config = asConfig(value);
+  const categories = [
+    { id: 'general', label: 'General', icon: 'settings' },
+    { id: 'monitoring', label: 'Monitoring', icon: 'activity' },
+    { id: 'notifications', label: 'Notifications', icon: 'bell' },
+    { id: 'tunnel', label: 'Tunnel', icon: 'terminal' },
+    { id: 'security', label: 'Security', icon: 'shield' },
+    { id: 'session', label: 'Session', icon: 'clock' },
+    { id: 'advanced', label: 'Advanced', icon: 'cpu' },
+    { id: 'about', label: 'About', icon: 'info' },
+  ];
+  const settings = [
+    { id: 'system.timezone', label: 'Timezone', type: 'select', value: readSetting(config, 'system', 'timezone'), description: 'Timezone used for dashboard display.', category: 'general', options: [{ label: 'UTC', value: 'UTC' }, { label: 'Asia/Jakarta', value: 'Asia/Jakarta' }, { label: 'Asia/Makassar', value: 'Asia/Makassar' }, { label: 'Asia/Jayapura', value: 'Asia/Jayapura' }] },
+    { id: 'system.logLevel', label: 'Log level', type: 'select', value: readSetting(config, 'system', 'logLevel'), description: 'Runtime logging verbosity.', category: 'general', options: [{ label: 'Error', value: 'error' }, { label: 'Warn', value: 'warn' }, { label: 'Info', value: 'info' }, { label: 'Debug', value: 'debug' }] },
+    { id: 'system.logRetentionDays', label: 'Log retention (days)', type: 'number', value: readSetting(config, 'system', 'logRetentionDays'), description: 'Retention policy for operational logs.', category: 'general' },
+    { id: 'monitoring.snapshotIntervalMs', label: 'Snapshot interval (ms)', type: 'number', value: readSetting(config, 'monitoring', 'snapshotIntervalMs'), description: 'Interval for persisted system snapshots.', category: 'monitoring' },
+    { id: 'monitoring.cpuSamplingIntervalMs', label: 'CPU sampling interval (ms)', type: 'number', value: readSetting(config, 'monitoring', 'cpuSamplingIntervalMs'), description: 'CPU sampling cadence used by monitoring.', category: 'monitoring' },
+    { id: 'monitoring.diskSamplingIntervalMs', label: 'Disk sampling interval (ms)', type: 'number', value: readSetting(config, 'monitoring', 'diskSamplingIntervalMs'), description: 'Disk sampling cadence used by monitoring.', category: 'monitoring' },
+    { id: 'notification.enabled', label: 'Notifications enabled', type: 'toggle', value: readSetting(config, 'notification', 'enabled'), description: 'Enable configured notification delivery.', category: 'notifications' },
+    { id: 'notification.workerCount', label: 'Notification workers', type: 'number', value: readSetting(config, 'notification', 'workerCount'), description: 'Number of notification workers.', category: 'notifications' },
+    { id: 'notification.maxRetry', label: 'Maximum retries', type: 'number', value: readSetting(config, 'notification', 'maxRetry'), description: 'Maximum retry count for failed delivery.', category: 'notifications' },
+    { id: 'tunnel.primaryProvider', label: 'Primary provider', type: 'select', value: readSetting(config, 'tunnel', 'primaryProvider'), description: 'Provider name used for tunnel configuration.', category: 'tunnel', options: [{ label: 'Cloudflare', value: 'cloudflare' }, { label: 'Ngrok', value: 'ngrok' }, { label: 'None', value: '' }] },
+    { id: 'tunnel.autoReconnect', label: 'Auto reconnect', type: 'toggle', value: readSetting(config, 'tunnel', 'autoReconnect'), description: 'Reconnect when a configured tunnel reports a failure.', category: 'tunnel' },
+    { id: 'tunnel.healthCheckIntervalMs', label: 'Health check interval (ms)', type: 'number', value: readSetting(config, 'tunnel', 'healthCheckIntervalMs'), description: 'Interval for tunnel health checks.', category: 'tunnel' },
+    { id: 'security.rateLimitRequestsPerMinute', label: 'API rate limit per minute', type: 'number', value: readSetting(config, 'security', 'rateLimitRequestsPerMinute'), description: 'Maximum requests allowed per minute.', category: 'security' },
+    { id: 'security.encryptionEnabled', label: 'Encryption enabled', type: 'toggle', value: readSetting(config, 'security', 'encryptionEnabled'), description: 'Keep encrypted-at-rest configuration protection enabled.', category: 'security' },
+    { id: 'authentication.sessionLifetimeHours', label: 'Session lifetime (hours)', type: 'number', value: readSetting(config, 'authentication', 'sessionLifetimeHours'), description: 'Lifetime of authenticated sessions.', category: 'session' },
+    { id: 'authentication.maxLoginAttempts', label: 'Maximum login attempts', type: 'number', value: readSetting(config, 'authentication', 'maxLoginAttempts'), description: 'Attempts allowed before brute-force cooldown.', category: 'session' },
+    { id: 'authentication.passwordMinLength', label: 'Minimum password length', type: 'number', value: readSetting(config, 'authentication', 'passwordMinLength'), description: 'Minimum length required for new passwords.', category: 'session' },
+  ];
+  return { categories, settings };
+}
 export function createSettingsRouter(di?: DI): Router {
   const router = Router();
   const resolve = (key: string) => di?.resolve(key) ?? null;
   router.get('/', async (_req, res) => {
     const ctx = createRequestContext(_req);
     const uc = resolve('getConfigurationUseCase') as UseCase<string, unknown> | null;
+    const workspaceId = await resolveSystemWorkspaceId(resolve, ctx.workspaceId ?? undefined) ?? ctx.workspaceId ?? 'default';
     if (uc) {
       try {
-        const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId: ctx.workspaceId ?? 'default' });
-        const r = await uc.execute(ctx.workspaceId ?? 'default', uctx);
-        if (r.success) { sendOk(res, r.data ?? defaultSettings(), ctx); return; }
+        const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId });
+        const r = await uc.execute(workspaceId, uctx);
+        if (r.success) { sendOk(res, settingsView(r.data), ctx); return; }
       } catch {  }
     }
-    sendOk(res, defaultSettings(), ctx);
+    sendOk(res, settingsView(null), ctx);
   });
   router.patch('/', async (req, res) => {
     const ctx = createRequestContext(req);
-    const uc = resolve('updateConfigurationUseCase') as UseCase<{ workspaceId: string; config: unknown }, void> | null;
-    if (uc) {
-      try {
-        const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId: ctx.workspaceId ?? 'default' });
-        await uc.execute({ workspaceId: ctx.workspaceId ?? 'default', config: req.body }, uctx);
-        sendOk(res, { ...(req.body as Record<string, unknown>), updatedAt: new Date().toISOString() }, ctx);
-        broadcastEvent(req, 'settings', 'settings.updated', { updates: req.body as Record<string, unknown> });
-        return;
-      } catch {  }
+    const getUc = resolve('getConfigurationUseCase') as UseCase<string, unknown> | null;
+    const updateUc = resolve('updateConfigurationUseCase') as UseCase<{ workspaceId: string; config: unknown }, void> | null;
+    const workspaceId = await resolveSystemWorkspaceId(resolve, ctx.workspaceId ?? undefined) ?? ctx.workspaceId ?? 'default';
+    try {
+      let current: unknown = null;
+      if (getUc) {
+        const currentResult = await getUc.execute(workspaceId, createUseCaseContext({ correlationId: ctx.correlationId, workspaceId }));
+        if (currentResult.success) current = currentResult.data;
+      }
+      const body = req.body && typeof req.body === 'object' ? req.body as Record<string, unknown> : {};
+      const next = body.reset === true ? defaultConfiguration() : applySettingUpdates(asConfig(current), body.updates);
+      if (updateUc) {
+        const result = await updateUc.execute({ workspaceId, config: next }, createUseCaseContext({ correlationId: ctx.correlationId, workspaceId }));
+        if (!result.success) { sendError(res, 500, 'CONFIG_UPDATE_FAILED', 'Settings could not be saved', ctx); return; }
+      }
+      sendOk(res, { ...settingsView(next), updatedAt: new Date().toISOString() }, ctx);
+      broadcastEvent(req, 'settings', body.reset === true ? 'settings.reset' : 'settings.updated', { updates: body.updates ?? [] });
+    } catch {
+      sendError(res, 500, 'CONFIG_UPDATE_FAILED', 'Settings could not be saved', ctx);
     }
-    sendOk(res, { ...(req.body as Record<string, unknown>), updatedAt: new Date().toISOString() }, ctx);
   });
   return router;
-}
-function defaultSettings() {
-  return {
-    categories: [
-      { id: 'general', label: 'General', icon: 'settings' },
-      { id: 'notifications', label: 'Notifications', icon: 'bell' },
-      { id: 'monitoring', label: 'Monitoring', icon: 'activity' },
-      { id: 'security', label: 'Security', icon: 'shield' },
-    ],
-    settings: [
-      { id: 'theme', label: 'Theme', type: 'select', value: 'dark', description: 'Application theme', category: 'general', options: [{ label: 'Dark', value: 'dark' }, { label: 'Light', value: 'light' }] },
-      { id: 'language', label: 'Language', type: 'select', value: 'en', description: 'Interface language', category: 'general', options: [{ label: 'English', value: 'en' }] },
-      { id: 'timezone', label: 'Timezone', type: 'select', value: 'UTC', description: 'Time zone', category: 'general', options: [{ label: 'UTC', value: 'UTC' }] },
-    ],
-  };
 }
 export function createProfileRouter(_di?: DI): Router {
   const router = Router();

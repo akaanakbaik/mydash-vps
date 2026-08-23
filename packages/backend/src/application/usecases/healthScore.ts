@@ -1,4 +1,4 @@
-import type { Result, AppError, HealthScore, DomainEvent } from '@mydash/shared';
+import type { Result, AppError, HealthScore, HealthHistory, DomainEvent } from '@mydash/shared';
 import { Severity, Priority, EventCategory } from '@mydash/shared';
 import type { UseCase, UseCaseContext, UseCaseMetadata } from './base.js';
 import type { HealthCalculator } from '../../domain/healthScore/services.js';
@@ -80,6 +80,34 @@ const getHealthMetadata: UseCaseMetadata = {
   idempotent: true,
   timeoutMs: 3000,
 };
+const getHistoryMetadata: UseCaseMetadata = {
+  name: 'GetHealthHistory',
+  description: 'Get health score history for a server',
+  category: 'HealthScore',
+  requiresAuth: false,
+  idempotent: true,
+  timeoutMs: 5000,
+};
+export class GetHealthHistoryUseCase implements UseCase<{ serverId: string; windowMs: number }, HealthHistory[]> {
+  public readonly metadata = getHistoryMetadata;
+  constructor(private readonly repository: HealthScoreRepository) {}
+  async execute(
+    input: { serverId: string; windowMs: number },
+    _context: UseCaseContext,
+  ): Promise<Result<HealthHistory[], AppError>> {
+    try {
+      const history = await this.repository.findHistory(input.serverId, input.windowMs);
+      return { success: true, data: history, error: null };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      return {
+        success: false,
+        data: null,
+        error: { name: error.name, message: error.message, code: 'HEALTH_HISTORY_FAILED' } as AppError,
+      };
+    }
+  }
+}
 export class GetHealthScoreUseCase implements UseCase<{ serverId: string }, HealthScore | null> {
   public readonly metadata = getHealthMetadata;
   constructor(

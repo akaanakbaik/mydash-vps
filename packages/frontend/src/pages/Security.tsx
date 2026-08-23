@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
@@ -55,7 +55,7 @@ export function SecurityPage() {
       </PageContainer>
     );
   }
-  const filteredEvents = useMemo(() => {
+  const filteredEvents = (() => {
     let entries = data.events;
     if (filter !== 'all') entries = entries.filter((e) => e.severity === filter);
     if (search) {
@@ -63,7 +63,7 @@ export function SecurityPage() {
       entries = entries.filter((e) => e.event.toLowerCase().includes(q) || e.user.toLowerCase().includes(q) || e.ip.includes(q));
     }
     return entries;
-  }, [data.events, filter, search]);
+  })();
   return (
     <PageContainer>
       <div className="mb-6 flex items-center gap-4">

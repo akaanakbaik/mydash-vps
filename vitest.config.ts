@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    environmentMatchGlobs: [['packages/frontend/**/*.test.tsx', 'jsdom'], ['packages/frontend/**/*.spec.tsx', 'jsdom']],
     include: ['packages/**/*.test.ts', 'packages/**/*.spec.ts', 'packages/**/*.test.tsx', 'packages/**/*.spec.tsx'],
     exclude: ['**/node_modules/**', '**/dist/**'],
     coverage: {

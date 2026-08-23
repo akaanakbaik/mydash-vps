@@ -1,7 +1,6 @@
 import { createServer } from 'http';
 import type { ServiceContainer } from '../infrastructure/utilities.js';
 import { createExpressApp } from './http/app.js';
-import { createReadinessRouter } from './http/router.js';
 import { createWebSocketServer } from './ws/server.js';
 import { createTransportConfig } from './config.js';
 import type { Logger } from '../logging/index.js';
@@ -21,8 +20,7 @@ export function registerTransport(container: ServiceContainer, env: Record<strin
   };
   const registry = container.resolve('serviceRegistry') as { resolve: (key: string) => unknown } | undefined;
   const jwtSecret = env['JWT_SECRET'] ?? 'dev-secret';
-  const app = createExpressApp(logger, jwtSecret, registry as Parameters<typeof createExpressApp>[2]);
-  app.use('/readiness', createReadinessRouter(readinessCheck));
+  const app = createExpressApp(logger, jwtSecret, registry as Parameters<typeof createExpressApp>[2], readinessCheck);
   const server = createServer(app);
   const wsServer = createWebSocketServer(server, logger, { path: config.wsPath });
   app.set('wsServer', wsServer);

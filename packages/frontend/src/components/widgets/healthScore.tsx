@@ -594,11 +594,11 @@ interface HealthGradeCardProps {
 }
 const gradeDescriptions: Record<HealthGrade, { label: string; range: string; color: string }> = {
   'A+': { label: 'Excellent', range: '95-100', color: 'text-[hsl(var(--color-success))]' },
-  'A': { label: 'Healthy', range: '85-94', color: 'text-[hsl(var(--color-success))]' },
-  'B': { label: 'Good', range: '70-84', color: 'text-[hsl(var(--color-warning))]' },
-  'C': { label: 'Warning', range: '55-69', color: 'text-[hsl(var(--color-warning))]' },
-  'D': { label: 'Poor', range: '40-54', color: 'text-[hsl(var(--color-danger))]' },
-  'F': { label: 'Critical', range: '0-39', color: 'text-[hsl(var(--color-danger))]' },
+  'A': { label: 'Healthy', range: '90-94', color: 'text-[hsl(var(--color-success))]' },
+  'B': { label: 'Good', range: '80-89', color: 'text-[hsl(var(--color-warning))]' },
+  'C': { label: 'Warning', range: '70-79', color: 'text-[hsl(var(--color-warning))]' },
+  'D': { label: 'Poor', range: '60-69', color: 'text-[hsl(var(--color-danger))]' },
+  'F': { label: 'Critical', range: '0-59', color: 'text-[hsl(var(--color-danger))]' },
 };
 export function HealthGradeCard({ grade, score, isLoading }: HealthGradeCardProps) {
   if (isLoading) {

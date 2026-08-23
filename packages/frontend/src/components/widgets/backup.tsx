@@ -35,7 +35,10 @@ function formatSize(mb: number): string {
   return String(Math.round(mb)) + ' GB';
 }
 function formatTimeAgo(iso: string): string {
-  const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (!iso) return 'Not available';
+  const timestamp = new Date(iso).getTime();
+  if (Number.isNaN(timestamp)) return 'Not available';
+  const mins = Math.floor((Date.now() - timestamp) / 60000);
   if (mins < 1) return 'just now';
   if (mins < 60) return String(mins) + 'm ago';
   const hrs = Math.floor(mins / 60);
@@ -55,7 +58,9 @@ export function BackupOverview({ summary }: { summary: { totalBackups: number; f
 }
 export function BackupSummaryCard({ summary, isLoading }: { summary: { totalBackups: number; successRate: number; lastBackup: string; nextScheduled: string }; isLoading?: boolean }) {
   if (isLoading) return <BackupCard title="Summary" icon={<BarChart3 className="h-4 w-4" />}><SkeletonBlock lines={4} /></BackupCard>;
-  return <BackupCard title="Summary" icon={<BarChart3 className="h-4 w-4" />}><div className="space-y-3"><div className="flex items-baseline gap-2"><span className="text-2xl font-bold text-[hsl(var(--color-text))]">{String(summary.totalBackups)}</span><span className="text-xs text-[hsl(var(--color-muted))]">total backups</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Success Rate</span><span className={cn('font-medium', summary.successRate >= 95 ? 'text-[hsl(var(--color-success))]' : 'text-[hsl(var(--color-warning))]')}>{summary.successRate.toFixed(1)}%</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Last Backup</span><span className="text-[hsl(var(--color-text))]">{formatTimeAgo(summary.lastBackup)}</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Next Scheduled</span><span className="text-[hsl(var(--color-text))]">{new Date(summary.nextScheduled).toLocaleDateString()}</span></div></div></BackupCard>;
+  const nextScheduledDate = summary.nextScheduled ? new Date(summary.nextScheduled) : null;
+  const nextScheduledLabel = nextScheduledDate && !Number.isNaN(nextScheduledDate.getTime()) ? nextScheduledDate.toLocaleDateString() : 'Not scheduled';
+  return <BackupCard title="Summary" icon={<BarChart3 className="h-4 w-4" />}><div className="space-y-3"><div className="flex items-baseline gap-2"><span className="text-2xl font-bold text-[hsl(var(--color-text))]">{String(summary.totalBackups)}</span><span className="text-xs text-[hsl(var(--color-muted))]">total backups</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Success Rate</span><span className={cn('font-medium', summary.successRate >= 95 ? 'text-[hsl(var(--color-success))]' : 'text-[hsl(var(--color-warning))]')}>{summary.successRate.toFixed(1)}%</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Last Backup</span><span className="text-[hsl(var(--color-text))]">{formatTimeAgo(summary.lastBackup)}</span></div><div className="flex items-center justify-between text-xs"><span className="text-[hsl(var(--color-muted))]">Next Scheduled</span><span className="text-[hsl(var(--color-text))]">{nextScheduledLabel}</span></div></div></BackupCard>;
 }
 export function BackupStorageCard({ storageUsed, storageTotal, isLoading }: { storageUsed: number; storageTotal: number; isLoading?: boolean }) {
   if (isLoading) return <BackupCard title="Storage" icon={<Database className="h-4 w-4" />}><SkeletonBlock lines={3} /></BackupCard>;

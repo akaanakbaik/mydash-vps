@@ -13,6 +13,7 @@ const navigationItems: readonly NavItem[] = [
   { path: '/', icon: LayoutDashboard, label: 'Overview', group: 'primary' },
   { path: '/servers', icon: Server, label: 'Servers', group: 'primary' },
   { path: '/monitoring', icon: Activity, label: 'Monitoring', group: 'primary' },
+  { path: '/observability', icon: Activity, label: 'Observability', group: 'primary' },
   { path: '/analytics', icon: Cpu, label: 'Analytics', group: 'primary' },
   { path: '/notifications', icon: Bell, label: 'Notifications', group: 'management' },
   { path: '/automation', icon: Bot, label: 'Automation', group: 'management' },
@@ -37,7 +38,15 @@ export function getNavigationByGroup(): Record<string, NavItem[]> {
   }
   return Object.fromEntries(groups);
 }
+const internalPageLabels: Record<string, string> = {
+  '/health-score': 'Health Score',
+  '/profile': 'Profile',
+  '/sessions': 'Sessions',
+  '/roles': 'Roles',
+  '/terms': 'Terms',
+  '/privacy': 'Privacy',
+};
 export function getPageLabel(path: string): string {
   const item = navigationItems.find((n) => n.path === path);
-  return item?.label ?? 'Unknown';
+  return item?.label ?? internalPageLabels[path] ?? 'Unknown';
 }

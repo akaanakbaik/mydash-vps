@@ -10,7 +10,6 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { type LucideIcon, ChevronUp, ChevronDown, ChevronsUpDown, CheckCircle, XCircle, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { safeStr } from '../../utils/index.js';
 import { cn } from '../../utils/cn.js';
-import { getMockPluginData } from '../../services/mockPlugin.js';
 import type { RecordUnknown } from './types.js';
 const pluginStatusStyles: Record<string, { color: string; icon: LucideIcon }> = {
   installed: { color: 'hsl(var(--color-success))', icon: CheckCircle },
@@ -20,8 +19,7 @@ const pluginStatusStyles: Record<string, { color: string; icon: LucideIcon }> = 
   incompatible: { color: 'hsl(var(--color-danger))', icon: AlertTriangle },
 };
 export function PluginTable({ data: externalData }: { data?: RecordUnknown[] } = {}) {
-  const defaultData = getMockPluginData().plugins as unknown as RecordUnknown[];
-  const data = externalData ?? defaultData;
+  const data = externalData ?? [];
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo<ColumnDef<RecordUnknown>[]>(() => [
     {

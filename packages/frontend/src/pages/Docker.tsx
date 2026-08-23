@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { PageContainer } from '../components/layout/PageContainer.js';
@@ -50,15 +50,12 @@ export function DockerPage() {
       </PageContainer>
     );
   }
-  const filteredContainers = useMemo(() => {
-    let items = data.containers;
-    if (filter !== 'all') items = items.filter((c) => c.status === filter);
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter((c) => c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q));
-    }
-    return items;
-  }, [data.containers, filter, search]);
+  let filteredContainers = data.containers;
+  if (filter !== 'all') filteredContainers = filteredContainers.filter((c) => c.status === filter);
+  if (search) {
+    const q = search.toLowerCase();
+    filteredContainers = filteredContainers.filter((c) => c.name.toLowerCase().includes(q) || c.image.toLowerCase().includes(q));
+  }
   return (
     <PageContainer>
       <div className="mb-6 flex items-center gap-4">

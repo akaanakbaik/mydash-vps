@@ -4,9 +4,20 @@ import {
   BarChart3, TrendingUp, AlertTriangle, Sigma, Percent, LineChart,
   Zap, Activity, Info,
 } from 'lucide-react';
-import { ChartPlaceholder } from './ChartPlaceholder.js';
+import { RealtimeChart } from '../shared/RealtimeChart.js';
 import { Skeleton } from '../shared/Skeleton.js';
 import { SkeletonBlock } from '../shared/Skeleton.js';
+function finite(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+export function formatAnalyticsNumber(value: number, maximumFractionDigits = 2): string {
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits }).format(finite(value));
+}
+function timestamp(value: string): string | null {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 interface AnalyticsBadgeProps {
   label: string;
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
@@ -129,9 +140,9 @@ export function AggregationCard({ data, isLoading }: AggregationCardProps) {
           <div key={item.label} className="flex items-center justify-between py-1">
             <span className="text-xs text-[hsl(var(--color-muted))]">{item.label}</span>
             <div className="flex items-center gap-3 text-xs">
-              <span className="text-[hsl(var(--color-text))] font-medium">{String(item.avg)}</span>
-              <span className="text-[hsl(var(--color-muted))]">Min {String(item.min)}</span>
-              <span className="text-[hsl(var(--color-muted))]">Max {String(item.max)}</span>
+              <span className="text-[hsl(var(--color-text))] font-medium">{formatAnalyticsNumber(item.avg)}</span>
+              <span className="text-[hsl(var(--color-muted))]">Min {formatAnalyticsNumber(item.min)}</span>
+              <span className="text-[hsl(var(--color-muted))]">Max {formatAnalyticsNumber(item.max)}</span>
             </div>
           </div>
         ))}
@@ -151,18 +162,17 @@ export function TrendCard({ data, isLoading }: TrendCardProps) {
       </AnalyticsCard>
     );
   }
-  const latestVal = data.length > 0 ? data[data.length - 1].value : null;
-  const oldestVal = data.length > 0 ? data[0].value : null;
+  const points = (data ?? []).flatMap((item) => { const ts = timestamp(item.timestamp); return ts ? [{ timestamp: ts, value: finite(item.value), movingAvg: finite(item.movingAvg) }] : []; });
+  const latestVal = points.length > 0 ? points[points.length - 1].value : null;
+  const oldestVal = points.length > 0 ? points[0].value : null;
   const change = (latestVal ?? 0) - (oldestVal ?? 0);
   return (
     <AnalyticsCard title="Trend" icon={<TrendingUp className="h-4 w-4" />}>
-      <div className="flex items-baseline gap-2 mb-3">
-        <span className="text-2xl font-bold text-[hsl(var(--color-text))]">{latestVal !== null ? String(latestVal) : '—'}</span>
-        <span className={cn('text-xs font-medium', change > 0 ? 'text-[hsl(var(--color-danger))]' : change < 0 ? 'text-[hsl(var(--color-success))]' : 'text-[hsl(var(--color-muted))]')}>
-          {change > 0 ? '+' : ''}{change.toFixed(1)}
-        </span>
+      <div className="mb-3 flex items-baseline gap-2">
+        <span className="text-2xl font-bold text-[hsl(var(--color-text))]">{latestVal !== null ? formatAnalyticsNumber(latestVal) : '—'}</span>
+        {latestVal !== null && <span className={cn('text-xs font-medium', change > 0 ? 'text-[hsl(var(--color-danger))]' : change < 0 ? 'text-[hsl(var(--color-success))]' : 'text-[hsl(var(--color-muted))]')}>{change > 0 ? '+' : ''}{change.toFixed(1)}</span>}
       </div>
-      <ChartPlaceholder label="Trend History" height="sm" variant="line" />
+      {points.length > 0 ? <RealtimeChart series={[{ label: 'Value', color: 'hsl(var(--color-primary))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.value })), fill: true }, { label: 'Moving average', color: 'hsl(var(--color-muted))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.movingAvg })), dashed: true }]} height={170} /> : <AnalyticsEmptyState title="No trend data" description="Trend charts will appear after metrics history is recorded." />}
     </AnalyticsCard>
   );
 }
@@ -199,8 +209,8 @@ export function AnomalyCard({ data, isLoading }: AnomalyCardProps) {
             </div>
             <p className="text-xs text-[hsl(var(--color-muted))]">{a.description}</p>
             <div className="flex gap-3 mt-1 text-xs text-[hsl(var(--color-muted))]">
-              <span>Value: {String(a.value)}</span>
-              <span>Expected: {String(a.expected)}</span>
+              <span>Value: {formatAnalyticsNumber(a.value)}</span>
+              <span>Expected: {formatAnalyticsNumber(a.expected)}</span>
             </div>
           </div>
         ))}
@@ -225,7 +235,7 @@ export function StatisticsCard({ data, isLoading }: StatisticsCardProps) {
       <div className="grid grid-cols-2 gap-2">
         {data.map((s) => (
           <div key={s.label} className="rounded-lg border border-[hsl(var(--color-border))] p-2.5">
-            <p className="text-lg font-bold text-[hsl(var(--color-text))]">{String(s.value)}{s.unit}</p>
+            <p className="text-lg font-bold text-[hsl(var(--color-text))]">{formatAnalyticsNumber(s.value)}{s.unit}</p>
             <p className="text-xs text-[hsl(var(--color-muted))]">{s.label}</p>
             <p className="text-xs text-[hsl(var(--color-muted))] mt-0.5">{s.description}</p>
           </div>
@@ -264,11 +274,11 @@ export function PercentileCard({ data, isLoading }: PercentileCardProps) {
             {data.map((p) => (
               <tr key={p.label} className="border-b border-[hsl(var(--color-border))]/50">
                 <td className="px-2 py-1.5 text-[hsl(var(--color-text))]">{p.label}</td>
-                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{String(p.p50)}</td>
-                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{String(p.p75)}</td>
-                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{String(p.p90)}</td>
-                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{String(p.p95)}</td>
-                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{String(p.p99)}</td>
+                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{formatAnalyticsNumber(p.p50)}</td>
+                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{formatAnalyticsNumber(p.p75)}</td>
+                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{formatAnalyticsNumber(p.p90)}</td>
+                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{formatAnalyticsNumber(p.p95)}</td>
+                <td className="px-2 py-1.5 text-right text-[hsl(var(--color-text))]">{formatAnalyticsNumber(p.p99)}</td>
               </tr>
             ))}
           </tbody>
@@ -289,27 +299,17 @@ export function PredictionCard({ data, isLoading }: PredictionCardProps) {
       </AnalyticsCard>
     );
   }
-  const lastEntry = data.length > 0 ? data[data.length - 1] : null;
-  const firstEntry = data.length > 0 ? data[0] : null;
+  const points = (data ?? []).flatMap((item) => { const ts = timestamp(item.timestamp); return ts ? [{ timestamp: ts, predicted: finite(item.predicted), lower: finite(item.lower), upper: finite(item.upper), confidence: Math.min(100, Math.max(0, finite(item.confidence))) }] : []; });
+  const lastEntry = points.length > 0 ? points[points.length - 1] : null;
+  const firstEntry = points.length > 0 ? points[0] : null;
   return (
     <AnalyticsCard title="Prediction" icon={<LineChart className="h-4 w-4" />}>
-      <div className="flex items-center gap-4 mb-3 text-xs">
-        <div>
-          <span className="text-[hsl(var(--color-muted))]">Predicted: </span>
-          <span className="font-medium text-[hsl(var(--color-text))]">{lastEntry !== null ? String(lastEntry.predicted) : '—'}</span>
-        </div>
-        <div>
-          <span className="text-[hsl(var(--color-muted))]">Range: </span>
-          <span className="font-medium text-[hsl(var(--color-text))]">
-            {firstEntry !== null ? `${String(firstEntry.lower)}–${String(firstEntry.upper)}` : '—'}
-          </span>
-        </div>
-        <div>
-          <span className="text-[hsl(var(--color-muted))]">Confidence: </span>
-          <span className="font-medium text-[hsl(var(--color-text))]">{lastEntry !== null ? `${lastEntry.confidence.toFixed(0)}%` : '—'}</span>
-        </div>
+      <div className="mb-3 flex flex-wrap items-center gap-4 text-xs">
+        <div><span className="text-[hsl(var(--color-muted))]">Predicted: </span><span className="font-medium text-[hsl(var(--color-text))]">{lastEntry !== null ? formatAnalyticsNumber(lastEntry.predicted) : '—'}</span></div>
+        <div><span className="text-[hsl(var(--color-muted))]">Range: </span><span className="font-medium text-[hsl(var(--color-text))]">{firstEntry !== null ? `${formatAnalyticsNumber(firstEntry.lower)}–${formatAnalyticsNumber(firstEntry.upper)}` : '—'}</span></div>
+        <div><span className="text-[hsl(var(--color-muted))]">Confidence: </span><span className="font-medium text-[hsl(var(--color-text))]">{lastEntry !== null ? `${lastEntry.confidence.toFixed(0)}%` : '—'}</span></div>
       </div>
-      <ChartPlaceholder label="48h Prediction" height="sm" variant="area" />
+      {points.length > 0 ? <RealtimeChart series={[{ label: 'Predicted', color: 'hsl(var(--color-primary))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.predicted })), fill: true }, { label: 'Lower bound', color: 'hsl(var(--color-muted))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.lower })), dashed: true }, { label: 'Upper bound', color: 'hsl(var(--color-warning))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.upper })), dashed: true }]} height={170} /> : <AnalyticsEmptyState title="No prediction data" description="Predictions will appear after enough historical samples are collected." />}
     </AnalyticsCard>
   );
 }
@@ -334,12 +334,12 @@ export function ResourceEfficiencyCard({ data, isLoading }: ResourceEfficiencyCa
             <div key={r.resource} className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-[hsl(var(--color-text))]">{r.resource}</span>
-                <span className={cn('text-xs font-medium', r.score >= 80 ? 'text-[hsl(var(--color-success))]' : r.score >= 60 ? 'text-[hsl(var(--color-warning))]' : 'text-[hsl(var(--color-danger))]')}>
-                  {String(r.score)}%
+                <span className={cn('text-xs font-medium', r.score >= 80 ? 'text-[hsl(var(--color-success))]' : r.score >= 60 ? 'text-[hsl(var(--color-warning))]' : 'text-[hsl(var(--color-danger))')}>
+                  {formatAnalyticsNumber(r.score)}%
                 </span>
               </div>
               <div className="h-1.5 rounded-full bg-[hsl(var(--color-border))] overflow-hidden">
-                <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${String(r.score)}%` }} role="progressbar" aria-valuenow={r.score} aria-valuemin={0} aria-valuemax={100} aria-label={`${r.resource}: ${String(r.score)}%`} />
+                <div className={cn('h-full rounded-full transition-all', color)} style={{ width: `${String(Math.min(100, Math.max(0, r.score)))}%` }} role="progressbar" aria-valuenow={r.score} aria-valuemin={0} aria-valuemax={100} aria-label={`${r.resource}: ${formatAnalyticsNumber(r.score)}%`} />
               </div>
               <p className="text-xs text-[hsl(var(--color-muted))]">{r.recommendation}</p>
             </div>
@@ -370,18 +370,13 @@ export function AnalyticsTimeline({ data, label = 'Timeline', isLoading, classNa
       </div>
     );
   }
+  const points = (data ?? []).flatMap((item) => { const ts = timestamp(item.timestamp); return ts ? [{ timestamp: ts, value: finite(item.value), movingAvg: finite(item.movingAvg) }] : []; });
   return (
     <div className={cn('space-y-3', className)}>
-      <ChartPlaceholder label={label} height="md" variant="line" />
+      {points.length > 0 ? <RealtimeChart series={[{ label: label, color: 'hsl(var(--color-primary))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.value })), fill: true }, { label: 'Moving average', color: 'hsl(var(--color-muted))', data: points.map((point) => ({ timestamp: point.timestamp, value: point.movingAvg })), dashed: true }]} height={210} /> : <AnalyticsEmptyState title="No timeline data" description="Timeline data will appear after the analytics pipeline has stored historical metrics." />}
       <div className="flex items-center gap-4 text-xs text-[hsl(var(--color-muted))]">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[hsl(var(--color-primary))]" aria-hidden="true" />
-          Value
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[hsl(var(--color-muted))]" aria-hidden="true" />
-          Moving Average
-        </span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[hsl(var(--color-primary))]" aria-hidden="true" />Value</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-[hsl(var(--color-muted))]" aria-hidden="true" />Moving Average</span>
       </div>
     </div>
   );

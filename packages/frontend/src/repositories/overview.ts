@@ -2,14 +2,23 @@ import { apiClient } from '../api/client.js';
 export interface ServerInfo {
   hostname: string;
   os: string;
+  distro?: string;
+  kernel?: string;
+  architecture?: string;
+  virtualization?: string;
+  filesystem?: string;
   uptime: string;
   cpuCores: number;
   cpuModel: string;
   totalRam: number;
   usedRam: number;
+  totalSwap?: number;
+  usedSwap?: number;
   totalDisk: number;
   usedDisk: number;
   agentVersion: string;
+  interface?: string;
+  interfaceIpv4?: string;
 }
 export interface HealthFactor {
   name: string;

@@ -12,4 +12,5 @@ export const settingsRepository = {
     apiClient.get<SettingsResponse>('/settings'),
   update: (updates: SettingUpdate[]) =>
     apiClient.patch('/settings', { updates }),
+  reset: () => apiClient.patch('/settings', { reset: true }),
 };

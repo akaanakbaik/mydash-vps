@@ -38,6 +38,7 @@ export interface DiskMetric {
 export interface NetworkMetric {
   interface: string;
   publicIpv4: string;
+  interfaceIpv4: string;
   publicIpv6: string;
   rxBytes: number;
   txBytes: number;
@@ -68,10 +69,10 @@ export interface TunnelMetric {
 export interface ServiceMetric {
   name: string;
   status: 'running' | 'stopped' | 'failed' | 'restarting';
-  cpu: number;
-  memory: number;
+  cpu: number | null;
+  memory: number | null;
   uptime: string;
-  port: number;
+  port: number | null;
 }
 export interface MetricTimelinePoint {
   timestamp: string;

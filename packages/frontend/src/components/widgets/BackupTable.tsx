@@ -8,7 +8,6 @@ import {
 } from '@tanstack/react-table';
 import { type ColumnDef } from '@tanstack/react-table';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-import { getMockBackupData } from '../../services/mockBackup.js';
 import type { RecordUnknown } from './types.js';
 import { safeStr } from '../../utils/index.js';
 const backupStatusStyles: Record<string, { color: string; label: string }> = {
@@ -18,8 +17,7 @@ const backupStatusStyles: Record<string, { color: string; label: string }> = {
   scheduled: { color: 'hsl(var(--color-warning))', label: 'Scheduled' },
 };
 export function BackupTable({ data: externalData }: { data?: RecordUnknown[] } = {}) {
-  const defaultData = getMockBackupData().backups as unknown as RecordUnknown[];
-  const data = externalData ?? defaultData;
+  const data = externalData ?? [];
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo<ColumnDef<RecordUnknown>[]>(() => [
     {

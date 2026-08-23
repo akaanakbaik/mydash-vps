@@ -13,6 +13,8 @@ export function useMonitoringTimeline(metric: string, range: string) {
   return useQuery({
     queryKey: queryKeys.monitoring.timeline({ metric, range }),
     queryFn: () => monitoringRepository.getTimeline(metric, range).then((res) => res.data),
-    staleTime: 15_000,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
   });
 }

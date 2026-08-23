@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { PageContainer } from '../components/layout/PageContainer.js';
@@ -33,15 +33,12 @@ export function PluginPage() {
       <PluginEmptyState />
     </PageContainer>;
   }
-  const filteredPlugins = useMemo(() => {
-    let items = data.plugins;
-    if (filter) items = items.filter((p) => p.status === filter);
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
-    }
-    return items;
-  }, [data.plugins, filter, search]);
+  let filteredPlugins = data.plugins;
+  if (filter) filteredPlugins = filteredPlugins.filter((p) => p.status === filter);
+  if (search) {
+    const q = search.toLowerCase();
+    filteredPlugins = filteredPlugins.filter((p) => p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+  }
   return (
     <PageContainer>
       <div className="mb-6 flex items-center gap-4">
@@ -56,14 +53,14 @@ export function PluginPage() {
       </div>
       <PluginOverview data={data} />
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <PluginMarketplaceCard />
-        <PluginInstalledCard />
-        <PluginCategoryCard />
+        <PluginMarketplaceCard plugins={data.marketplace} />
+        <PluginInstalledCard plugins={data.plugins} />
+        <PluginCategoryCard plugins={data.plugins} />
       </div>
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <PluginDependencyCard />
-        <PluginPermissionCard />
-        <PluginVersionCard />
+        <PluginDependencyCard plugins={data.plugins} />
+        <PluginPermissionCard plugins={data.plugins} />
+        <PluginVersionCard plugins={data.plugins} />
       </div>
       <div className="mt-6">
         <div className="mb-3">

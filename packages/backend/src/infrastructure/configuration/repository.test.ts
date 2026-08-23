@@ -6,10 +6,16 @@ describe('ConfigurationRepositoryImpl', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const chain = vi.fn().mockReturnThis();
+    const rows = [] as Array<{ id?: string; key?: string; value?: unknown }> & { limit?: ReturnType<typeof vi.fn> };
+    rows.limit = vi.fn().mockResolvedValue([]);
+    const selectQuery = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnValue(rows),
+    };
     const mockDb = {
-      select: chain, from: chain, where: vi.fn().mockResolvedValue([]),
-      insert: vi.fn().mockReturnValue({ values: vi.fn().mockReturnValue({ onConflictDoUpdate: vi.fn().mockResolvedValue(undefined) }) }),
+      select: vi.fn().mockReturnValue(selectQuery),
+      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }) }),
+      insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) }),
     } as never;
     repo = new ConfigurationRepositoryImpl(mockDb);
   });

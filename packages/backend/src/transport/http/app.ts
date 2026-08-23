@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import type { Logger } from '../../logging/index.js';
 import { correlationIdMiddleware, requestLoggerMiddleware, errorHandlerMiddleware, notFoundMiddleware, validationMiddleware, rateLimiterMiddleware } from './middleware.js';
 import { createApiRouter } from '../../api/routes/index.js';
+import { createReadinessRouter } from './router.js';
 import type { ServiceRegistry } from '../../application/registry/serviceRegistry.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,7 +26,7 @@ function resolveFrontendDist(): string | null {
   }
   return null;
 }
-export function createExpressApp(logger: Logger, jwtSecret: string, registry?: ServiceRegistry): Express {
+export function createExpressApp(logger: Logger, jwtSecret: string, registry?: ServiceRegistry, readinessCheck?: () => Promise<boolean>): Express {
   const app = express();
   app.use(helmet({
     contentSecurityPolicy: false,
@@ -35,8 +36,15 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     frameguard: { action: 'deny' },
   }));
+  const corsOrigins = (process.env['CORS_ORIGINS'] ?? process.env['CORS_ORIGIN'] ?? 'http://localhost:5173').split(',').map((origin) => origin.trim()).filter(Boolean);
   app.use(cors({
-    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin || corsOrigins.includes('*') || corsOrigins.includes(requestOrigin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origin not allowed'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Request-Id'],
     credentials: true,
@@ -61,9 +69,9 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
         }
       },
     }));
-    const apiPaths = ['/api/', '/health', '/ready', '/live', '/version', '/ws'];
+    const isApiPath = (requestPath: string) => requestPath.startsWith('/api/') || requestPath === '/health' || requestPath === '/ready' || requestPath === '/live' || requestPath === '/version' || requestPath.startsWith('/readiness') || requestPath.startsWith('/ws');
     app.use((req, res, next) => {
-      if (req.method === 'GET' && !apiPaths.some(p => req.path.startsWith(p)) && !path.extname(req.path)) {
+      if (req.method === 'GET' && !isApiPath(req.path) && !path.extname(req.path)) {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.sendFile(path.join(frontendDist, 'index.html'));
         return;
@@ -81,6 +89,9 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
   app.use('/', root);
   const apiRouter = createApiRouter(logger, jwtSecret, registry);
   app.use('/api/v1', apiRouter);
+  if (readinessCheck) {
+    app.use('/readiness', createReadinessRouter(readinessCheck));
+  }
   app.use(notFoundMiddleware());
   app.use(errorHandlerMiddleware(logger));
   return app;

@@ -13,6 +13,8 @@ export function Sidebar({ collapsed }: SidebarProps) {
   const closeMobileDrawer = useAppStore((s) => s.closeMobileDrawer);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const sidebarRef = useRef<HTMLElement>(null);
+  const previousFocus = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
   const location = useLocation();
   const groups = getNavigationByGroup();
   useEffect(() => {
@@ -25,12 +27,23 @@ export function Sidebar({ collapsed }: SidebarProps) {
     return () => { document.removeEventListener('keydown', handleEscape); };
   }, [mobileDrawerOpen, closeMobileDrawer]);
   useEffect(() => {
-    if (mobileDrawerOpen && sidebarRef.current) {
-      const firstFocusable = sidebarRef.current.querySelector<HTMLElement>(
-        'a, button, [tabindex]:not([tabindex="-1"])',
-      );
-      firstFocusable?.focus();
+    if (mobileDrawerOpen) {
+      previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      document.body.style.overflow = 'hidden';
+      window.requestAnimationFrame(() => {
+        const firstFocusable = sidebarRef.current?.querySelector<HTMLElement>('a, button, [tabindex]:not([tabindex="-1"])');
+        firstFocusable?.focus();
+      });
+      wasOpen.current = true;
+      return;
     }
+    document.body.style.overflow = '';
+    if (wasOpen.current) {
+      previousFocus.current?.focus();
+      previousFocus.current = null;
+      wasOpen.current = false;
+    }
+    return () => { document.body.style.overflow = ''; };
   }, [mobileDrawerOpen]);
   const sidebarContent = (
     <aside
@@ -38,15 +51,15 @@ export function Sidebar({ collapsed }: SidebarProps) {
       role="navigation"
       aria-label="Main navigation"
       className={cn(
-        'flex flex-col border-r border-[hsl(var(--color-border))] bg-[hsl(var(--color-surface))] transition-all duration-200',
-        collapsed ? 'w-16' : 'w-60',
+        'glass-surface flex h-full w-full flex-col border-r border-[hsl(var(--color-border))] transition-[width,transform] duration-200',
+        collapsed ? 'w-16' : 'md:w-60',
       )}
     >
-      <div className={cn('flex h-14 items-center border-b border-[hsl(var(--color-border))]', collapsed ? 'justify-center px-0' : 'px-4')}>
+      <div className={cn('flex h-16 items-center border-b border-[hsl(var(--color-border))]/70', collapsed ? 'justify-center px-0' : 'px-4')}>
         <Logo collapsed={collapsed} />
       </div>
       {}
-      <div className="flex-1 overflow-y-auto py-2 scrollbar-thin">
+      <div className="app-scrollbar flex-1 overflow-y-auto py-3">
         {Object.entries(groups).map(([group, items]) => (
           <div key={group} className="mb-1">
             {!collapsed && (
@@ -69,10 +82,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 }}
                 className={({ isActive }) =>
                   cn(
-                    'group relative mx-2 flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-surface))]',
+                    'group relative mx-2 flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-surface))]',
                     isActive
-                      ? 'bg-[hsl(var(--color-primary))]/10 text-[hsl(var(--color-primary))] font-medium'
-                      : 'text-[hsl(var(--color-muted))] hover:bg-[hsl(var(--color-border))] hover:text-[hsl(var(--color-text))]',
+                      ? 'border-[hsl(var(--color-primary))]/30 bg-[linear-gradient(105deg,hsl(var(--color-primary)/0.18),hsl(var(--color-primary)/0.05))] text-[hsl(var(--color-text))] font-semibold shadow-[inset_3px_0_0_hsl(var(--color-primary)),0_8px_20px_hsl(var(--color-primary)/0.08)]'
+                      : 'text-[hsl(var(--color-muted))] hover:border-[hsl(var(--color-border-strong))]/70 hover:bg-[hsl(var(--color-surface-raised))] hover:text-[hsl(var(--color-text))]',
                     collapsed && 'justify-center px-0 mx-1',
                   )
                 }
@@ -89,7 +102,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
       </div>
       {!collapsed && (
         <div className="border-t border-[hsl(var(--color-border))] px-3 py-3">
-          <div className="rounded-lg bg-[hsl(var(--color-bg))] p-2.5">
+            <div className="skeuo-inset rounded-xl p-3">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[hsl(var(--color-primary))]/20">
                 <User className="h-3 w-3 text-[hsl(var(--color-primary))]" />
@@ -113,7 +126,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
           </div>
         </div>
       )}
-      <div className={cn('hidden md:block border-t border-[hsl(var(--color-border))] p-3', collapsed && 'flex justify-center')}>
+      <div className={cn('hidden border-t border-[hsl(var(--color-border))]/70 p-3 md:block', collapsed && 'flex justify-center')}>
         {!collapsed && (
           <button
             onClick={toggleSidebar}
@@ -140,17 +153,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
       {}
       <div className="hidden md:flex">{sidebarContent}</div>
       {}
-      {mobileDrawerOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={closeMobileDrawer}
-          aria-hidden="true"
-        />
-      )}
+      {mobileDrawerOpen && <button type="button" className="fixed inset-0 z-40 cursor-default bg-[hsl(var(--color-bg))]/70 backdrop-blur-sm transition-opacity duration-200 md:hidden" onClick={closeMobileDrawer} aria-label="Close navigation menu" /> }
       {}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-72 md:hidden transition-transform duration-200 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-2rem))] md:hidden transition-transform duration-200 ease-out',
           mobileDrawerOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >

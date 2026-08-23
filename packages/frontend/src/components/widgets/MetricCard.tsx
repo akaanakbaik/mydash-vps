@@ -35,13 +35,13 @@ export function MetricCard({ title, icon, children, className, status }: MetricC
   return (
     <section
       className={cn(
-        'rounded-xl border border-[hsl(var(--color-border))] bg-[hsl(var(--color-surface))] border-l-2',
+        'skeuo-surface interactive-surface rounded-2xl overflow-hidden border-l-2',
         status && statusColor(status),
         className,
       )}
       aria-label={`${title} metric card`}
     >
-      <div className="flex items-center justify-between border-b border-[hsl(var(--color-border))] px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--color-border))]/60 bg-[hsl(var(--color-surface-raised)/0.3)] px-4 py-3">
         <div className="flex items-center gap-2">
           {status && <span className={cn('h-2 w-2 rounded-full', statusIndicator(status))} aria-label={status} />}
           <span className="text-[hsl(var(--color-muted))]" aria-hidden="true">{icon}</span>
@@ -77,9 +77,9 @@ function ProgressBar({ percent, color = 'primary' }: { percent: number; color?: 
       ? 'bg-[hsl(var(--color-warning))]'
       : 'bg-[hsl(var(--color-primary))]';
   return (
-    <div className="h-1.5 rounded-full bg-[hsl(var(--color-border))] overflow-hidden">
+    <div className="skeuo-inset h-2 rounded-full overflow-hidden">
       <div
-        className={cn('h-full rounded-full transition-all duration-500', colorClass)}
+        className={cn('h-full rounded-full transition-all duration-500 shadow-[0_0_12px_hsl(var(--color-primary)/0.3)]', colorClass)}
         style={{ width: `${String(Math.min(percent, 100))}%` }}
         role="progressbar"
         aria-valuenow={Math.round(percent)}
@@ -125,9 +125,9 @@ export function CpuCard({ data, isLoading }: CpuCardProps) {
       <ProgressBar percent={data.usagePercent} color={color} />
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1">
         <MetricRow label="Cores / Threads" value={`${String(data.cores)} / ${String(data.threads)}`} />
-        <MetricRow label="Clock" value={`${String(data.clockCurrent)} GHz`} />
+        <MetricRow label="Clock" value={formatClock(data.clockCurrent)} />
         <MetricRow label="Load Average" value={String(data.loadAverage)} />
-        <MetricRow label="Temperature" value={data.temperature ? `${String(data.temperature)}°C` : 'N/A'} />
+        <MetricRow label="Temperature" value={data.temperature === null ? 'N/A' : `${String(data.temperature)}°C`} />
       </div>
       <ChartPlaceholder label="CPU History" height="sm" variant="line" className="mt-1" />
     </MetricCard>
@@ -143,6 +143,10 @@ interface MemoryCardProps {
     swapUsed: number;
   };
   isLoading?: boolean;
+}
+function formatClock(mhz: number): string {
+  if (!Number.isFinite(mhz) || mhz <= 0) return 'N/A';
+  return mhz >= 1000 ? `${(mhz / 1000).toFixed(2)} GHz` : `${mhz.toFixed(0)} MHz`;
 }
 function formatMb(mb: number): string {
   if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
@@ -228,7 +232,7 @@ export function DiskCard({ data, isLoading }: DiskCardProps) {
 interface NetworkCardProps {
   data: {
     interface: string;
-    publicIpv4: string;
+    interfaceIpv4: string;
     rxSpeed: number;
     txSpeed: number;
     packetLoss: number;
@@ -258,7 +262,7 @@ export function NetworkCard({ data, isLoading }: NetworkCardProps) {
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 pt-1">
         <MetricRow label="Interface" value={data.interface} />
-        <MetricRow label="Public IP" value={data.publicIpv4} />
+        <MetricRow label="Interface IPv4" value={data.interfaceIpv4 || 'Not available'} />
         <MetricRow label="Latency" value={`${String(data.latency)} ms`} trend={data.latency > 50 ? 'up' : 'stable'} />
         <MetricRow label="Packet Loss" value={`${String(data.packetLoss)}%`} trend={data.packetLoss > 1 ? 'up' : 'stable'} />
         <MetricRow label="Connections" value={String(data.connections)} />
@@ -288,7 +292,7 @@ export function DockerCard({ data, isLoading }: DockerCardProps) {
       </MetricCard>
     );
   }
-  const status = data.health === 'healthy' ? 'healthy' : data.health === 'degraded' ? 'warning' : 'critical';
+  const status = data.health === 'healthy' ? 'healthy' : data.health === 'degraded' ? 'warning' : data.health === 'unavailable' ? 'inactive' : 'critical';
   return (
     <MetricCard title="Docker" icon={<Container className="h-4 w-4" />} status={status}>
       <div className="flex items-baseline gap-2">
@@ -302,7 +306,7 @@ export function DockerCard({ data, isLoading }: DockerCardProps) {
         <MetricRow label="Stopped" value={String(data.stopped)} />
         <MetricRow label="CPU" value={`${String(data.cpuPercent)}%`} />
         <MetricRow label="Memory" value={`${String(data.memoryPercent)}%`} />
-        <MetricRow label="Health" value={data.health} />
+        <MetricRow label="Health" value={data.health === 'unavailable' ? 'Unavailable' : data.health} />
       </div>
     </MetricCard>
   );

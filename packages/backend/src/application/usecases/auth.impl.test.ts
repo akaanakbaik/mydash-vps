@@ -61,6 +61,7 @@ describe('LoginUseCaseImpl', () => {
   });
   it('should create admin user on first login for default workspace', async () => {
     vi.mocked(mockUserRepo.findByEmail).mockResolvedValue(null);
+    vi.mocked(mockUserRepo.findByWorkspaceId).mockResolvedValue([]);
     vi.mocked(mockUserRepo.save).mockResolvedValue(undefined);
     vi.mocked(mockSessionRepo.save).mockResolvedValue(undefined);
     const result = await useCase.execute({ workspaceId: 'default', password: 'TestPassword123!' }, createContext());
@@ -68,6 +69,25 @@ describe('LoginUseCaseImpl', () => {
     expect(mockUserRepo.findByEmail).toHaveBeenCalledWith('admin@mydash.local');
     expect(mockUserRepo.save).toHaveBeenCalled();
     expect(mockSessionRepo.save).toHaveBeenCalled();
+  });
+  it('should authenticate the requested email', async () => {
+    const password = 'TestPassword123!';
+    const mockUser: Record<string, unknown> = {
+      id: 'user-email',
+      workspaceId: 'default',
+      email: 'akaanakbaik17@proton.me',
+      displayName: 'Administrator',
+      passwordHash: await hashPassword(password),
+      role: 'owner',
+      lastLoginAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    vi.mocked(mockUserRepo.findByEmail).mockResolvedValue(mockUser as never);
+    vi.mocked(mockSessionRepo.save).mockResolvedValue(undefined);
+    const result = await useCase.execute({ workspaceId: 'default', email: ' AkaAnakBaik17@Proton.Me ', password }, createContext());
+    expect(result.success).toBe(true);
+    expect(mockUserRepo.findByEmail).toHaveBeenCalledWith('akaanakbaik17@proton.me');
   });
   it('should reject invalid credentials for existing user', async () => {
     const mockUser: Record<string, unknown> = {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
@@ -31,7 +31,7 @@ export function AutomationPage() {
   if (!data) {
     return <PageContainer maxWidth="xl"><p className="text-sm text-[hsl(var(--color-muted))]">No automation data available.</p></PageContainer>;
   }
-  const filteredWorkflows = useMemo(() => {
+  const filteredWorkflows = (() => {
     let rows = data.workflows;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -39,8 +39,8 @@ export function AutomationPage() {
     }
     if (statusFilter !== 'all') rows = rows.filter((w) => w.status === statusFilter);
     return rows;
-  }, [data.workflows, searchQuery, statusFilter]);
-  const filteredExecutions = useMemo(() => {
+  })();
+  const filteredExecutions = (() => {
     let rows = data.executions;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -48,7 +48,7 @@ export function AutomationPage() {
     }
     if (statusFilter !== 'all') rows = rows.filter((e) => e.status === statusFilter);
     return rows;
-  }, [data.executions, searchQuery, statusFilter]);
+  })();
   return (
     <PageContainer maxWidth="xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

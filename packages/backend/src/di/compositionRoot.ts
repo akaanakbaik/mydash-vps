@@ -1,7 +1,7 @@
 import type { ServiceContainer } from '../infrastructure/utilities.js';
 import type { Logger } from '../logging/index.js';
 import { IngestMetricUseCase, GetLatestMetricsUseCase, GetMetricWindowUseCase } from '../application/usecases/monitoring.js';
-import { CalculateHealthScoreUseCase, GetHealthScoreUseCase } from '../application/usecases/healthScore.js';
+import { CalculateHealthScoreUseCase, GetHealthScoreUseCase, GetHealthHistoryUseCase } from '../application/usecases/healthScore.js';
 import { CalculateAnalyticsSummaryUseCase, GetAnalyticsSummaryUseCase } from '../application/usecases/analytics.js';
 import { CreateAutomationUseCase, ListAutomationsUseCase, ExecuteAutomationUseCase, TriggerAutomationByEventUseCase, GetExecutionStatusUseCase, CancelExecutionUseCase } from '../application/usecases/automation.js';
 import { DispatchNotificationsUseCase } from '../application/usecases/notification.js';
@@ -55,6 +55,7 @@ export function registerUseCases(container: ServiceContainer, logger: Logger): v
   const getHealthCalculator = () => new HealthScoreCalculator(getMetricRepo(), getAnalyticsRepo(), logger);
   container.register('calculateHealthScoreUseCase', () => new CalculateHealthScoreUseCase(getHealthCalculator(), getHealthRepo(), getCache(), getEventBus(), logger));
   container.register('getHealthScoreUseCase', () => new GetHealthScoreUseCase(getHealthRepo(), getCache()));
+  container.register('getHealthHistoryUseCase', () => new GetHealthHistoryUseCase(getHealthRepo()));
   const getAutomationRepo = () => new AutomationRepositoryImpl(getDb());
   const getExecutionRepo = () => new AutomationExecutionRepositoryImpl(getDb());
   const triggerEngineFactory = () => new TriggerEngineImpl();

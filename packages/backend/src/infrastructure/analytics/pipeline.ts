@@ -94,11 +94,15 @@ export class AnalyticsPipelineImpl implements AnalyticsPipeline {
   }
   private groupByType(metrics: Metric[]): Map<string, Metric[]> {
     const map = new Map<string, Metric[]>();
-    for (const m of metrics) {
-      const key = m.header.metricType;
-      const existing = map.get(key) ?? [];
-      existing.push(m);
-      map.set(key, existing);
+    for (const metric of metrics) {
+      const candidate = metric as unknown as Record<string, unknown>;
+      const header = candidate.header;
+      if (!header || typeof header !== 'object') continue;
+      const metricType = (header as Record<string, unknown>).metricType;
+      if (typeof metricType !== 'string' || metricType.length === 0) continue;
+      const existing = map.get(metricType) ?? [];
+      existing.push(metric);
+      map.set(metricType, existing);
     }
     return map;
   }

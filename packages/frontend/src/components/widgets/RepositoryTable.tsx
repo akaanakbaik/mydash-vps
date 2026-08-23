@@ -9,11 +9,9 @@ import {
 import { type ColumnDef } from '@tanstack/react-table';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { safeStr } from '../../utils/index.js';
-import { getMockGitHubData } from '../../services/mockGitHub.js';
 import type { RecordUnknown } from './types.js';
 export function RepositoryTable({ data: externalData }: { data?: RecordUnknown[] } = {}) {
-  const defaultData = getMockGitHubData().repos as unknown as RecordUnknown[];
-  const data = externalData ?? defaultData;
+  const data = externalData ?? [];
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo<ColumnDef<RecordUnknown>[]>(() => [
     {

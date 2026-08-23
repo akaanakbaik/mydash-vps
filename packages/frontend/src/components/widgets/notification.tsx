@@ -6,7 +6,6 @@ import {
   Smartphone, RefreshCw,
   Sliders, Layers, FileText, Search,
 } from 'lucide-react';
-import { ChartPlaceholder } from './ChartPlaceholder.js';
 import { Skeleton, SkeletonBlock } from '../shared/Skeleton.js';
 interface NotificationBadgeProps {
   label: string;
@@ -577,15 +576,27 @@ export function NotificationTimeline({ data, label = 'Notification Timeline', is
       </div>
     );
   }
-  const totalSent = data.reduce((sum, d) => sum + d.sent, 0);
-  const totalFailed = data.reduce((sum, d) => sum + d.failed, 0);
+  const totalSent = data.reduce((sum, item) => sum + Math.max(0, item.sent), 0);
+  const totalDelivered = data.reduce((sum, item) => sum + Math.max(0, item.delivered), 0);
+  const totalFailed = data.reduce((sum, item) => sum + Math.max(0, item.failed), 0);
+  const maxValue = Math.max(1, ...data.map((item) => Math.max(item.sent, item.delivered, item.failed)));
+  const visibleData = data.slice(-48);
   return (
-    <div className={cn('space-y-3', className)}>
-      <div className="flex items-center gap-4 text-xs text-[hsl(var(--color-muted))]">
+    <div className={cn('space-y-3', className)} aria-label={label}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[hsl(var(--color-muted))]">
         <span>Sent: <span className="font-medium text-[hsl(var(--color-text))]">{String(totalSent)}</span></span>
+        <span>Delivered: <span className="font-medium text-[hsl(var(--color-success))]">{String(totalDelivered)}</span></span>
         <span>Failed: <span className="font-medium text-[hsl(var(--color-danger))]">{String(totalFailed)}</span></span>
       </div>
-      <ChartPlaceholder label={label} height="md" variant="bar" />
+      <div className="skeuo-inset flex h-36 items-end gap-1 overflow-x-auto rounded-xl px-3 pb-3 pt-5 app-scrollbar">
+        {visibleData.map((item) => {
+          const sentHeight = Math.max(3, item.sent / maxValue * 100);
+          const deliveredHeight = item.delivered / maxValue * 100;
+          const failedHeight = item.failed / maxValue * 100;
+          return <div key={item.timestamp} className="group flex h-full min-w-3 flex-1 items-end gap-px" title={`${new Date(item.timestamp).toLocaleString()} · sent ${String(item.sent)} · delivered ${String(item.delivered)} · failed ${String(item.failed)}`}><div className="w-1/3 rounded-t-sm bg-[hsl(var(--color-primary))] transition-[height] duration-200 group-hover:bg-[hsl(var(--color-accent))]" style={{ height: `${String(sentHeight)}%` }} /><div className="w-1/3 rounded-t-sm bg-[hsl(var(--color-success))] transition-[height] duration-200" style={{ height: `${String(deliveredHeight)}%` }} /><div className="w-1/3 rounded-t-sm bg-[hsl(var(--color-danger))] transition-[height] duration-200" style={{ height: `${String(Math.max(failedHeight, item.failed > 0 ? 3 : 0))}%` }} /></div>;
+        })}
+      </div>
+      <div className="flex flex-wrap gap-3 text-[10px] text-[hsl(var(--color-muted))]"><span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-[hsl(var(--color-primary))]" />Sent</span><span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-[hsl(var(--color-success))]" />Delivered</span><span><i className="mr-1 inline-block h-2 w-2 rounded-sm bg-[hsl(var(--color-danger))]" />Failed</span></div>
     </div>
   );
 }

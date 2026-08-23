@@ -1,6 +1,6 @@
 import { apiClient } from '../api/client.js';
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
   rememberMe?: boolean;
 }
@@ -26,7 +26,7 @@ export interface AuthSession {
 }
 export const authRepository = {
   login: async (data: LoginRequest): Promise<LoginResult> => {
-    const res = await apiClient.post<BackendLoginData>('/auth/login', { password: data.password });
+    const res = await apiClient.post<BackendLoginData>('/auth/login', { email: data.email, password: data.password });
     const loginData = res.data;
     return {
       accessToken: loginData.accessToken,

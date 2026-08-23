@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
@@ -47,7 +47,7 @@ export function ServersPage() {
       </PageContainer>
     );
   }
-  const filteredServers = useMemo(() => {
+  const filteredServers = (() => {
     let rows = data.servers;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -71,19 +71,19 @@ export function ServersPage() {
       }
     });
     return rows;
-  }, [data.servers, searchQuery, statusFilter, sortBy]);
-  const handleSelectServer = useCallback((server: Server) => {
+  })();
+  const handleSelectServer = (server: Server) => {
     setSelectedServer(server);
-  }, []);
-  const handleCloseDrawer = useCallback(() => {
+  };
+  const handleCloseDrawer = () => {
     setSelectedServer(null);
-  }, []);
-  const handleAction = useCallback((_action: string, _server: Server) => {
+  };
+  const handleAction = (_action: string, _server: Server) => {
     if (_action === 'restart') {
     } else if (_action === 'view') {
       setSelectedServer(_server);
     }
-  }, []);
+  };
   const filterOptions = [
     { id: 'all', label: 'All Servers' },
     ...data.statusOptions,

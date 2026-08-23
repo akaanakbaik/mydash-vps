@@ -6,17 +6,18 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      gcTime: 5 * 60_000,
+      gcTime: 10 * 60_000,
       retry: 2,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10_000),
+      retryDelay: (attemptIndex) => Math.min(600 * 2 ** attemptIndex, 6000),
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      refetchOnMount: true,
+      refetchOnMount: 'always',
       networkMode: 'online',
       placeholderData: (previousData: unknown) => previousData,
+      structuralSharing: true,
     },
     mutations: {
-      retry: 1,
+      retry: 0,
       networkMode: 'online',
     },
   },
@@ -26,8 +27,7 @@ function RealtimeInitializer({ children }: { children: ReactNode }) {
   useEffect(() => {
     const rt = getRealtimeManager();
     rt.init(queryClient);
-    return () => {
-    };
+    return () => undefined;
   }, []);
   useRealtimeAutoConnect(true);
   return <>{children}</>;
@@ -35,14 +35,12 @@ function RealtimeInitializer({ children }: { children: ReactNode }) {
 export function QueryProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <RealtimeInitializer>
-        {children}
-      </RealtimeInitializer>
+      <RealtimeInitializer>{children}</RealtimeInitializer>
     </QueryClientProvider>
   );
 }
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     resetRealtimeManager();
-  });
+  }, { once: true });
 }

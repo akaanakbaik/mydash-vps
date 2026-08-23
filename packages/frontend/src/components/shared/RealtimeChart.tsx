@@ -23,7 +23,7 @@ interface RealtimeChartProps {
 }
 function formatTime(ts: string): string {
   const d = new Date(ts);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 function formatNumber(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -78,12 +78,14 @@ export function RealtimeChart({
     const chartH = Math.max(dimensions.height - pad.top - pad.bottom, 10);
     let yMax = -Infinity;
     let yMin = Infinity;
+    if (series.every((s) => s.data.length === 0)) return { width: dimensions.width, pad, chartW, chartH, yMin: 0, yRange: 1 };
     for (const s of series) {
       for (const p of s.data) {
         if (p.value > yMax) yMax = p.value;
         if (p.value < yMin) yMin = p.value;
       }
     }
+    if (!Number.isFinite(yMax) || !Number.isFinite(yMin)) return { width: dimensions.width, pad, chartW, chartH, yMin: 0, yRange: 1 };
     if (yMax === yMin) { yMax = yMax + 10; yMin = Math.max(0, yMin - 10); }
     const padding = (yMax - yMin) * 0.15;
     yMax += padding;
@@ -207,6 +209,11 @@ export function RealtimeChart({
             className={animate ? 'transition-all duration-500 ease-out' : ''}
           />
         ))}
+        {animate && paths.map((p, i) => {
+          const latest = p.pts[p.pts.length - 1];
+          if (!latest) return null;
+          return <circle key={`live-${i}`} cx={latest.x} cy={latest.y} r={4} fill={p.color} className="chart-live-node" />;
+        })}
         {}
         {hoveredX !== null && hoveredInfo && (
           <>
