@@ -4,6 +4,7 @@ import { Menu, Sun, Moon, User, Settings, Shield, LogOut, Bell, Clock, Users } f
 import { useTheme } from '../providers/ThemeProvider.js';
 import { useAppStore } from '../../stores/appStore.js';
 import { useLayout } from '../../hooks/useLayout.js';
+import { useNotifications } from '../../hooks/useNotification.js';
 import { Breadcrumb } from './Breadcrumb.js';
 import { cn } from '../../utils/cn.js';
 interface MenuItemProps {
@@ -26,10 +27,13 @@ function UserMenuItem({ icon: Icon, label, href, onClose }: MenuItemProps) {
   );
 }
 export function Header() {
+  const navigate = useNavigate();
   const { theme, toggle } = useTheme();
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const openMobileDrawer = useAppStore((s) => s.openMobileDrawer);
   const { isMobile, breadcrumbs } = useLayout();
+  const { data: notifData } = useNotifications();
+  const activities = notifData?.activity ?? [];
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -69,7 +73,7 @@ export function Header() {
   }, []);
   return (
     <header
-      className="flex h-14 items-center justify-between border-b border-[hsl(var(--color-border))] bg-[hsl(var(--color-surface))] px-3 sm:px-4"
+      className="glass-surface sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[hsl(var(--color-border))]/70 px-3 sm:px-5"
       role="banner"
     >
       <div className="flex items-center gap-2 sm:gap-3">
@@ -105,25 +109,35 @@ export function Header() {
             aria-expanded={notifOpen}
           >
             <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--color-danger))] text-[9px] font-bold text-white">3</span>
+            {activities.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--color-danger))] text-[9px] font-bold text-white">
+                {activities.length}
+              </span>
+            )}
           </button>
           {notifOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-xl border border-[hsl(var(--color-border))] bg-[hsl(var(--color-surface))] p-2 shadow-2xl">
-              <p className="mb-2 px-2 text-xs font-semibold text-[hsl(var(--color-text))]">Notifications</p>
-              <div className="space-y-1">
-                <div className="rounded-lg bg-[hsl(var(--color-danger))]/5 p-2">
-                  <p className="text-xs text-[hsl(var(--color-text))] font-medium">SSH Brute Force</p>
-                  <p className="text-[10px] text-[hsl(var(--color-muted))]">1,247 attempts blocked</p>
-                </div>
-                <div className="rounded-lg p-2">
-                  <p className="text-xs text-[hsl(var(--color-text))] font-medium">Backup Complete</p>
-                  <p className="text-[10px] text-[hsl(var(--color-muted))]">Daily backup finished</p>
-                </div>
-                <div className="rounded-lg p-2">
-                  <p className="text-xs text-[hsl(var(--color-text))] font-medium">Docker Build</p>
-                  <p className="text-[10px] text-[hsl(var(--color-muted))]">mydash-agent build failed</p>
-                </div>
+            <div className="skeuo-raised absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl p-3 shadow-2xl">
+              <p className="mb-2 px-2 text-xs font-semibold text-[hsl(var(--color-text))]">Recent Activity</p>
+              <div className="space-y-1 max-h-[320px] overflow-y-auto app-scrollbar">
+                {activities.length > 0 ? (
+                  activities.slice(0, 5).map((act) => (
+                    <div key={act.id} className={cn('rounded-lg p-2 transition-colors hover:bg-[hsl(var(--color-surface-raised)/0.3)]', act.severity === 'critical' || act.severity === 'error' ? 'bg-[hsl(var(--color-danger))]/5' : '')}>
+                      <p className="text-xs font-medium text-[hsl(var(--color-text))]">{act.message}</p>
+                      <p className="text-[10px] text-[hsl(var(--color-muted))]">{new Date(act.timestamp).toLocaleString()}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-xs text-[hsl(var(--color-muted))]">No recent notifications</p>
+                  </div>
+                )}
               </div>
+              <button
+                onClick={() => { setNotifOpen(false); void navigate('/notifications'); }}
+                className="mt-2 w-full rounded-lg py-1.5 text-center text-[10px] font-medium text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary))]/5"
+              >
+                View all notifications
+              </button>
             </div>
           )}
         </div>
@@ -141,7 +155,7 @@ export function Header() {
             <span className="hidden text-sm text-[hsl(var(--color-text))] sm:inline">admin</span>
           </button>
           {userMenuOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[hsl(var(--color-border))] bg-[hsl(var(--color-surface))] p-1.5 shadow-2xl" role="menu">
+            <div className="skeuo-raised absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl p-2 shadow-2xl" role="menu">
               <div className="border-b border-[hsl(var(--color-border))] pb-1 mb-1">
                 <p className="px-2 text-xs font-medium text-[hsl(var(--color-text))]">Administrator</p>
                 <p className="px-2 text-[10px] text-[hsl(var(--color-muted))]">admin@mydash.local</p>
@@ -166,10 +180,10 @@ function ConnectionIndicator() {
   return (
     <div
       className={cn(
-        'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+        'skeuo-inset flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider',
         isOnline
-          ? 'text-[hsl(var(--color-success))] bg-[hsl(var(--color-success))]/10'
-          : 'text-[hsl(var(--color-danger))] bg-[hsl(var(--color-danger))]/10',
+          ? 'text-[hsl(var(--color-success))]'
+          : 'text-[hsl(var(--color-danger))]',
       )}
       aria-live="polite"
       aria-label={isOnline ? 'Connected' : 'Disconnected'}
