@@ -36,8 +36,15 @@ export function createExpressApp(logger: Logger, jwtSecret: string, registry?: S
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     frameguard: { action: 'deny' },
   }));
+  const corsOrigins = (process.env['CORS_ORIGINS'] ?? process.env['CORS_ORIGIN'] ?? 'http://localhost:5173').split(',').map((origin) => origin.trim()).filter(Boolean);
   app.use(cors({
-    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin || corsOrigins.includes('*') || corsOrigins.includes(requestOrigin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error('Origin not allowed'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Correlation-Id', 'X-Request-Id'],
     credentials: true,
