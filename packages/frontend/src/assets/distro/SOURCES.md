@@ -1,17 +1,21 @@
-# Distro and OS Logo Assets
+# Distro and OS Icon Assets
 
-The seven files in this directory are downloaded raw from upstream project sources. They are not AI-generated, redrawn, recolored, cropped, combined, or rasterized by MyDash. The interface only places each original file inside a neutral presentation frame.
+The seven files in this directory are downloaded raw from the SVGRepo download URLs below. They are not AI-generated, redrawn, recolored, cropped, combined, or rasterized by MyDash. The interface only places each original SVG file inside a neutral presentation frame.
 
-| ID | Local file | Upstream source | Usage note |
-| --- | --- | --- | --- |
-| Ubuntu | `ubuntu.svg` | [Ubuntu brand asset](https://assets.ubuntu.com/v1/ff6a9a38-ubuntu-logo-2022.svg) | Ubuntu/Canonical trademark guidance applies. Brand page: [design.ubuntu.com/brand](https://design.ubuntu.com/brand). |
-| Debian | `debian.svg` | [Debian open use logo](https://www.debian.org/logos/openlogo.svg) | Debian states the open use logo is available under LGPL v3 or later, or CC BY-SA 3.0; trademark terms also apply. |
-| Fedora | `fedora.png` | [Fedora Project hosted logo](https://fedoraproject.org/w/uploads/2/2d/Logo_fedoralogo.png) | Fedora/Red Hat trademark and logo usage guidance applies. Reference: [Fedora Logo wiki](https://fedoraproject.org/wiki/Logo). |
-| Arch Linux | `arch-linux.svg` | [Arch Linux scalable logo](https://archlinux.org/static/logos/archlinux-logo-dark-scalable.svg) | Official Arch artwork; Arch Linux trademark policy applies. Reference: [archlinux.org/art](https://archlinux.org/art/). |
-| Linux Mint | `linux-mint.svg` | [Linux Mint brand repository file](https://raw.githubusercontent.com/linuxmint/brand-logo/master/ring.svg) | Raw SVG from the official `linuxmint/brand-logo` repository. |
-| Rocky Linux | `rocky-linux.svg` | [Rocky Linux Brand Kit logomark](https://raw.githubusercontent.com/rocky-linux/brand-kit/main/Logomark.svg) | Official Brand Kit asset; RESF/Rocky Linux trademark guide applies. Reference: [Rocky branding](https://wiki.rockylinux.org/team/design/branding/). |
-| openSUSE | `opensuse.svg` | [openSUSE official color logo](https://raw.githubusercontent.com/openSUSE/artwork/master/logos/official/logo-color.svg) | Official openSUSE artwork repository file; openSUSE trademark guidance applies. Reference: [openSUSE artwork logos](https://en.opensuse.org/openSUSE:Artwork_logos). |
+| ID | Local file | SVGRepo preview | Raw download | License shown on source page |
+| --- | --- | --- | --- | --- |
+| Arch Linux | `arch-linux.svg` | [Preview](https://www.svgrepo.com/svg/341619/arch-linux) | [Download](https://www.svgrepo.com/download/341619/arch-linux.svg) | GPL License |
+| Ubuntu | `ubuntu.svg` | [Preview](https://www.svgrepo.com/svg/473819/ubuntu) | [Download](https://www.svgrepo.com/download/473819/ubuntu.svg) | SVGRepo open-license catalog terms; Ubuntu trademark applies |
+| Kali Linux | `kali-linux.svg` | [Preview](https://www.svgrepo.com/svg/473687/kalilinux) | [Download](https://www.svgrepo.com/download/473687/kalilinux.svg) | Logo License |
+| Debian | `debian.svg` | [Preview](https://www.svgrepo.com/svg/473581/debian) | [Download](https://www.svgrepo.com/download/473581/debian.svg) | SVGRepo open-license catalog terms; Debian trademark applies |
+| Fedora | `fedora.svg` | [Preview](https://www.svgrepo.com/svg/354990/fedora) | [Download](https://www.svgrepo.com/download/354990/fedora.svg) | Apache License |
+| Linux Mint | `linux-mint.svg` | [Preview](https://www.svgrepo.com/svg/452055/linux-mint) | [Download](https://www.svgrepo.com/download/452055/linux-mint.svg) | MIT License |
+| openSUSE | `opensuse.svg` | [Preview](https://www.svgrepo.com/svg/306517/opensuse) | [Download](https://www.svgrepo.com/download/306517/opensuse.svg) | Logo License |
 
 ## Detection behavior
 
-`catalog.ts` matches the detected OS/distro text case-insensitively against conservative aliases. Ubuntu, Debian, Fedora, Arch Linux, Linux Mint, Rocky Linux, and openSUSE select their corresponding original asset. Unknown operating systems do not receive a fabricated distro logo; the UI displays a neutral device symbol and preserves the detected text.
+`catalog.ts` matches the detected OS/distro text case-insensitively against conservative aliases. Ubuntu, Debian, Fedora, Arch Linux, Kali Linux, Linux Mint, and openSUSE select their corresponding original icon. Unknown operating systems do not receive a fabricated distro logo; the UI displays a neutral device symbol and preserves the detected text.
+
+## Attribution and trademark notice
+
+SVGRepo hosts open-license vectors, but individual names and marks remain the property of their respective projects. The dashboard uses the icons only to identify the detected operating system and does not imply endorsement by any distro project.
