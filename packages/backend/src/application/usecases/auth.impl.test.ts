@@ -61,6 +61,7 @@ describe('LoginUseCaseImpl', () => {
   });
   it('should create admin user on first login for default workspace', async () => {
     vi.mocked(mockUserRepo.findByEmail).mockResolvedValue(null);
+    vi.mocked(mockUserRepo.findByWorkspaceId).mockResolvedValue([]);
     vi.mocked(mockUserRepo.save).mockResolvedValue(undefined);
     vi.mocked(mockSessionRepo.save).mockResolvedValue(undefined);
     const result = await useCase.execute({ workspaceId: 'default', password: 'TestPassword123!' }, createContext());

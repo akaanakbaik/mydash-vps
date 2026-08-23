@@ -33,7 +33,8 @@ export class LoginUseCaseImpl implements UseCase<LoginRequestDTO, unknown> {
       const workspaceId = input.workspaceId || context.workspaceId || 'default';
       const email = input.email?.trim().toLowerCase() || 'admin@mydash.local';
       let user: User | null = await this.userRepo.findByEmail(email);
-      if (!user && workspaceId === 'default') {
+      const workspaceUsers = user ? [user] : await this.userRepo.findByWorkspaceId(workspaceId as User['workspaceId']);
+      if (!user && workspaceId === 'default' && workspaceUsers.length === 0) {
         const now = new Date();
         const passwordHash = await hashPassword(input.password);
         const newUser: User = {
