@@ -61,6 +61,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-mydash-docker-dev-jwt-secret-change-in-production}
       LOG_LEVEL: info
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     volumes:
       - /run/mydash-host-metrics.json:/host-run/mydash-host-metrics.json:ro
     depends_on:
