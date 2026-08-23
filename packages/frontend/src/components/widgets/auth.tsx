@@ -18,11 +18,11 @@ export function LoginCard({ children, className }: { children: ReactNode; classN
   );
 }
 export function LoginForm({
-  username, password, showPassword, rememberMe, isLoading, error,
-  onUsernameChange, onPasswordChange, onTogglePassword, onRememberMeChange, onSubmit,
+  email, password, showPassword, rememberMe, isLoading, error,
+  onEmailChange, onPasswordChange, onTogglePassword, onRememberMeChange, onSubmit,
 }: {
-  username: string; password: string; showPassword: boolean; rememberMe: boolean; isLoading: boolean; error: string | null;
-  onUsernameChange: (v: string) => void; onPasswordChange: (v: string) => void; onTogglePassword: () => void; onRememberMeChange: (v: boolean) => void; onSubmit: () => void;
+  email: string; password: string; showPassword: boolean; rememberMe: boolean; isLoading: boolean; error: string | null;
+  onEmailChange: (v: string) => void; onPasswordChange: (v: string) => void; onTogglePassword: () => void; onRememberMeChange: (v: boolean) => void; onSubmit: () => void;
 }) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-4">
@@ -33,11 +33,11 @@ export function LoginForm({
         </div>
       )}
       <div className="space-y-1.5">
-        <label htmlFor="login-username" className="text-sm font-medium text-[hsl(var(--color-text))]">Username</label>
-        <input id="login-username" type="text" value={username} onChange={(e) => { onUsernameChange(e.target.value); }}
-          placeholder="Enter your username" autoComplete="username" autoFocus
+        <label htmlFor="login-email" className="text-sm font-medium text-[hsl(var(--color-text))]">Email</label>
+        <input id="login-email" type="email" value={email} onChange={(e) => { onEmailChange(e.target.value); }}
+          placeholder="Enter your email" autoComplete="email" autoFocus
           className="skeuo-inset w-full rounded-xl border border-[hsl(var(--color-border))] px-3.5 py-3 text-sm text-[hsl(var(--color-text))] placeholder:text-[hsl(var(--color-muted))] transition-all focus:border-[hsl(var(--color-primary))]/70 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
-          aria-label="Username" />
+          aria-label="Email" />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="login-password" className="text-sm font-medium text-[hsl(var(--color-text))]">Password</label>

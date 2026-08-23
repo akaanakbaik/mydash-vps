@@ -31,7 +31,7 @@ export class LoginUseCaseImpl implements UseCase<LoginRequestDTO, unknown> {
         return { success: false, data: null, error: { name: 'AuthError', message: 'Password is required', code: 'AUTH_MISSING_PASSWORD' } as AppError };
       }
       const workspaceId = input.workspaceId || context.workspaceId || 'default';
-      const email = 'admin@mydash.local';
+      const email = input.email?.trim().toLowerCase() || 'admin@mydash.local';
       let user: User | null = await this.userRepo.findByEmail(email);
       if (!user && workspaceId === 'default') {
         const now = new Date();

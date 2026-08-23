@@ -12,6 +12,7 @@ export interface ServerCreateDTO {
 }
 export interface LoginRequestDTO {
   workspaceId: string;
+  email?: string;
   password: string;
 }
 export interface MetricIngestDTO {

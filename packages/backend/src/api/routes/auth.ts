@@ -8,19 +8,19 @@ export function createAuthRouter(di?: DI): Router {
   const resolve = (key: string) => di?.resolve(key) ?? null;
   router.post('/login', async (req, res) => {
     const ctx = createRequestContext(req);
-    const { workspaceId, password } = (req.body ?? {}) as { workspaceId?: string; password?: string };
+    const { workspaceId, email, password } = (req.body ?? {}) as { workspaceId?: string; email?: string; password?: string };
     if (!password) {
       sendError(res, 422, 'VALIDATION_ERROR', 'Password is required', ctx);
       return;
     }
-    const uc = resolve('loginUseCase') as UseCase<{ workspaceId: string; password: string }, unknown> | null;
+    const uc = resolve('loginUseCase') as UseCase<{ workspaceId: string; email?: string; password: string }, unknown> | null;
     if (!uc) {
       sendError(res, 503, 'SERVICE_UNAVAILABLE', 'Auth service not initialized', ctx);
       return;
     }
     try {
       const uctx = createUseCaseContext({ correlationId: ctx.correlationId, workspaceId: workspaceId ?? 'default' });
-      const result = await uc.execute({ workspaceId: workspaceId ?? 'default', password }, uctx);
+      const result = await uc.execute({ workspaceId: workspaceId ?? 'default', email, password }, uctx);
       if (result.success) {
         const loginData = result.data as { user?: { id?: string } } | null;
         sendOk(res, result.data ?? { message: 'ok' }, ctx);

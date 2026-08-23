@@ -4,7 +4,7 @@ import { LoginCard, LoginForm } from '../components/widgets/auth.js';
 import { useLogin } from '../hooks/useAuth.js';
 export function LoginPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -17,13 +17,13 @@ export function LoginPage() {
     }
     setError(null);
     loginMutation.mutate(
-      { username, password, rememberMe },
+      { email, password, rememberMe },
       {
         onSuccess: () => {
           void navigate('/');
         },
         onError: (err) => {
-          setError(err instanceof Error ? err.message : 'Invalid username or password');
+          setError(err instanceof Error ? err.message : 'Invalid email or password');
         },
       },
     );
@@ -61,13 +61,13 @@ export function LoginPage() {
       <div className="relative flex flex-1 items-center justify-center bg-[radial-gradient(circle_at_50%_50%,hsl(var(--color-primary)/0.07),transparent_28rem)] px-4 py-10 sm:px-8">
         <LoginCard>
           <LoginForm
-            username={username}
+            email={email}
             password={password}
             showPassword={showPassword}
             rememberMe={rememberMe}
             isLoading={loginMutation.isPending}
             error={error}
-            onUsernameChange={setUsername}
+            onEmailChange={setEmail}
             onPasswordChange={setPassword}
             onTogglePassword={() => { setShowPassword(!showPassword); }}
             onRememberMeChange={setRememberMe}

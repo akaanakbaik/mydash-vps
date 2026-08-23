@@ -109,8 +109,8 @@ describe('useLogin mutation behavior', () => {
       user: { id: 'u1', name: 'admin', email: 'a@b.com', role: 'owner' },
     });
     const { result } = renderHook(() => useLogin(), { wrapper: createWrapper() });
-    result.current.mutate({ username: 'admin', password: 'pass' });
-    await waitFor(() => { expect(authRepository.login).toHaveBeenCalledWith({ username: 'admin', password: 'pass' }); });
+    result.current.mutate({ email: 'admin@example.com', password: 'pass' });
+    await waitFor(() => { expect(authRepository.login).toHaveBeenCalledWith({ email: 'admin@example.com', password: 'pass' }); });
     expect(authRepository.login).toHaveBeenCalledTimes(1);
   });
 });
