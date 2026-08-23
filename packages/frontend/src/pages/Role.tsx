@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
@@ -52,11 +52,11 @@ export function RolePage() {
       </PageContainer>
     );
   }
-  const filteredRoles = useMemo(() => {
+  const filteredRoles = (() => {
     if (!search) return data.roles;
     const q = search.toLowerCase();
     return data.roles.filter((r) => r.name.toLowerCase().includes(q) || r.description.toLowerCase().includes(q));
-  }, [data.roles, search]);
+  })();
   const selectedRoleData = selectedRole ? data.roles.find((r) => r.id === selectedRole) : null;
   return (
     <PageContainer>

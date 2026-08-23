@@ -17,7 +17,7 @@ import { SkeletonBlock } from '../components/shared/Skeleton.js';
 import { ErrorState } from '../components/shared/Skeleton.js';
 export function MonitoringPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['cpu', 'memory', 'network']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['cpu', 'memory', 'disk', 'network', 'docker', 'tunnel']);
   const navigate = useNavigate();
   const { data, isLoading, isError, isFetching, refetch } = useMonitoring();
   if (isLoading) {
@@ -54,9 +54,9 @@ export function MonitoringPage() {
       const variant = status === 'running' ? 'success' : status === 'failed' ? 'danger' : status === 'restarting' ? 'warning' : 'info';
       return <MetricBadge label={status} variant={variant} />;
     }},
-    { key: 'cpu', label: 'CPU %', align: 'right', width: 'flex-1', render: (v) => `${String(v)}%` },
-    { key: 'memory', label: 'Memory', align: 'right', width: 'flex-1', render: (v) => formatMb(v as number) },
-    { key: 'port', label: 'Port', align: 'right', width: 'flex-1' },
+    { key: 'cpu', label: 'CPU %', align: 'right', width: 'flex-1', render: (v) => typeof v === 'number' && Number.isFinite(v) ? `${String(v)}%` : 'Not available' },
+    { key: 'memory', label: 'Memory', align: 'right', width: 'flex-1', render: (v) => formatMb(typeof v === 'number' ? v : null) },
+    { key: 'port', label: 'Port', align: 'right', width: 'flex-1', render: (v) => typeof v === 'number' && Number.isFinite(v) ? String(v) : 'Not available' },
     { key: 'uptime', label: 'Uptime', width: 'flex-[1.5]' },
   ];
   const tableRows = filteredServices.map((s, i) => ({
@@ -70,11 +70,20 @@ export function MonitoringPage() {
   }));
   const hasCritical = data.services.some((s) => s.status === 'failed')
     || data.disks.some((d) => d.usagePercent > 85)
-    || data.tunnel.status !== 'connected';
+    || data.cpu.usagePercent > 95;
   const hasWarning = data.services.some((s) => s.status === 'stopped')
     || data.disks.some((d) => d.usagePercent > 70)
-    || data.cpu.usagePercent > 60;
+    || data.cpu.usagePercent > 60
+    || data.tunnel.status === 'reconnecting';
   const systemStatus: 'healthy' | 'warning' | 'critical' = hasCritical ? 'critical' : hasWarning ? 'warning' : 'healthy';
+  const metricOptions = data.categories.length > 0 ? data.categories : [
+    { id: 'cpu', label: 'CPU', count: 1 },
+    { id: 'memory', label: 'Memory', count: 1 },
+    { id: 'disk', label: 'Disk', count: data.disks.length },
+    { id: 'network', label: 'Network', count: 1 },
+    { id: 'docker', label: 'Docker', count: data.docker.containerCount },
+    { id: 'tunnel', label: 'Tunnel', count: data.tunnel.domain ? 1 : 0 },
+  ];
   return (
     <PageContainer maxWidth="xl">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -121,7 +130,7 @@ export function MonitoringPage() {
       <DashboardSection title="Metrics Trend" subtitle="Historical data over time" className="mb-6">
         <DashboardWidgetContainer title="Metric Timeline" subtitle="24-hour history">
           <MetricFilter
-            options={data.categories}
+            options={metricOptions}
             selected={selectedCategories}
             onChange={setSelectedCategories}
             className="mb-4"
@@ -133,7 +142,7 @@ export function MonitoringPage() {
         <DashboardWidgetContainer title="Services" subtitle={`${String(filteredServices.length)} services`}>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <MetricFilter
-              options={data.categories.filter((c) => c.id === 'services')}
+              options={metricOptions.filter((c) => c.id === 'services')}
               selected={selectedCategories.filter((c) => c === 'services')}
               onChange={() => {}}
               label=""
@@ -151,7 +160,8 @@ export function MonitoringPage() {
     </PageContainer>
   );
 }
-function formatMb(mb: number): string {
+function formatMb(mb: number | null): string {
+  if (mb === null || !Number.isFinite(mb)) return 'Not available';
   if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
   return `${String(Math.round(mb))} MB`;
 }

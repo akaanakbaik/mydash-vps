@@ -17,3 +17,12 @@ export function useUpdateSettings() {
     },
   });
 }
+export function useResetSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => settingsRepository.reset(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.all });
+    },
+  });
+}

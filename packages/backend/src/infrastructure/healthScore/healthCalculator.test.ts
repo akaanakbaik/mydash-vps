@@ -9,7 +9,15 @@ const mockLogger: Logger = {
   child: vi.fn(),
 };
 function createCalculator() {
-  return new HealthScoreCalculator({} as MetricRepository, {} as AnalyticsRepository, mockLogger);
+  const metricRepo: MetricRepository = {
+    findLatest: vi.fn().mockImplementation(async (_serverId: string, metricType: string) => {
+      if (metricType === 'cpu') return { usagePercent: 20 } as never;
+      if (metricType === 'memory') return { memoryPressure: 30 } as never;
+      if (metricType === 'disk') return { usedPercent: 40 } as never;
+      return null;
+    }),
+  } as unknown as MetricRepository;
+  return new HealthScoreCalculator(metricRepo, {} as AnalyticsRepository, mockLogger);
 }
 describe('HealthScoreCalculator', () => {
   describe('computeScores', () => {

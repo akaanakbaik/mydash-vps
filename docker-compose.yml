@@ -58,10 +58,11 @@ services:
       HOST: 0.0.0.0
       DATABASE_URL: postgresql://mydash:${DB_PASSWORD:-mydash_prod_2024}@postgres:5432/mydash
       REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
-
       JWT_SECRET: ${JWT_SECRET:-mydash-docker-dev-jwt-secret-change-in-production}
       LOG_LEVEL: info
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    volumes:
+      - /run/mydash-host-metrics.json:/host-run/mydash-host-metrics.json:ro
     depends_on:
       postgres:
         condition: service_healthy

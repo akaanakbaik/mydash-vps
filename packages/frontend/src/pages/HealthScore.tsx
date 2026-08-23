@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
 import { DashboardWidgetContainer } from '../components/widgets/DashboardWidgetContainer.js';
 import {
-  HealthOverview, OverallHealthCard, HealthTrendCard,
+  HealthOverview, HealthEmptyState, OverallHealthCard, HealthTrendCard,
   CpuHealthCard, MemoryHealthCard, DiskHealthCard,
   NetworkHealthCard, DockerHealthCard, TunnelHealthCard,
   ServiceHealthCard, PenaltyBreakdownCard, RecoveryStatusCard,
@@ -46,7 +46,7 @@ export function HealthScorePage() {
       </PageContainer>
     );
   }
-  const filteredHistory = useMemo(() => {
+  const filteredHistory = (() => {
     let rows = data.history;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -62,7 +62,7 @@ export function HealthScorePage() {
       }
     }
     return rows;
-  }, [data.history, searchQuery, categoryFilter]);
+  })();
   const filterOptions = [
     { id: 'all', label: 'All Events' },
     { id: 'good', label: 'Good' },
@@ -124,15 +124,21 @@ export function HealthScorePage() {
         </DashboardWidgetContainer>
       </DashboardGrid>
       <DashboardSection title="Category Health" subtitle="Detailed health breakdown by category" className="mb-6">
-        <DashboardGrid cols={1} colsSm={2} colsMd={3} colsLg={4} gap="gap-4">
-          <CpuHealthCard data={cpuData} />
-          <MemoryHealthCard data={memoryData} />
-          <DiskHealthCard data={diskData} />
-          <NetworkHealthCard data={networkData} />
-          <DockerHealthCard data={dockerData} />
-          <TunnelHealthCard data={tunnelData} />
-          <ServiceHealthCard data={serviceData} />
-        </DashboardGrid>
+        {data.categories.length === 0 ? (
+          <DashboardWidgetContainer title="Category Health" subtitle="Detailed health breakdown by category">
+            <HealthEmptyState title="No category health data" description="Category scores will appear after metrics history is collected." />
+          </DashboardWidgetContainer>
+        ) : (
+          <DashboardGrid cols={1} colsSm={2} colsMd={3} colsLg={4} gap="gap-4">
+            {cpuData && <CpuHealthCard data={cpuData} />}
+            {memoryData && <MemoryHealthCard data={memoryData} />}
+            {diskData && <DiskHealthCard data={diskData} />}
+            {networkData && <NetworkHealthCard data={networkData} />}
+            {dockerData && <DockerHealthCard data={dockerData} />}
+            {tunnelData && <TunnelHealthCard data={tunnelData} />}
+            {serviceData && <ServiceHealthCard data={serviceData} />}
+          </DashboardGrid>
+        )}
       </DashboardSection>
       <DashboardGrid cols={1} colsLg={2} gap="gap-4" className="mb-6">
         <PenaltyBreakdownCard penalties={data.penalties} />

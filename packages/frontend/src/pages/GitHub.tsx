@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { PageContainer } from '../components/layout/PageContainer.js';
@@ -37,7 +37,7 @@ export function GitHubPage() {
       <GitHubEmptyState />
     </PageContainer>;
   }
-  const filteredRepos = useMemo(() => {
+  const filteredRepos = (() => {
     let items = data.repos;
     if (filter === 'private') items = items.filter((r) => r.private);
     if (filter === 'public') items = items.filter((r) => !r.private);
@@ -46,7 +46,7 @@ export function GitHubPage() {
       items = items.filter((r) => r.name.toLowerCase().includes(q) || r.language.toLowerCase().includes(q));
     }
     return items;
-  }, [data.repos, filter, search]);
+  })();
   return (
     <PageContainer>
       <div className="mb-6 flex items-center gap-4">

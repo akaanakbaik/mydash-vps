@@ -10,7 +10,6 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { safeStr } from '../../utils/index.js';
 import { cn } from '../../utils/cn.js';
-import { getMockDockerData } from '../../services/mockDocker.js';
 import type { RecordUnknown } from './types.js';
 const containerStatusStyles: Record<string, string> = {
   running: 'text-[hsl(var(--color-success))]',
@@ -18,8 +17,7 @@ const containerStatusStyles: Record<string, string> = {
   paused: 'text-[hsl(var(--color-warning))]',
 };
 export function DockerTable({ data: externalData }: { data?: RecordUnknown[] } = {}) {
-  const defaultData = getMockDockerData().containers as unknown as RecordUnknown[];
-  const data = externalData ?? defaultData;
+  const data = externalData ?? [];
   const [sorting, setSorting] = useState<SortingState>([]);
   const columns = useMemo<ColumnDef<RecordUnknown>[]>(() => [
     {

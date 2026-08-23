@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { ArrowLeft, Settings as SettingsIcon, Palette, Bell, Activity, BarChart3, Bot, HardDrive, Package, Terminal, Lock, User, Clock, Cpu, Info } from 'lucide-react';
@@ -7,7 +7,7 @@ import {
   SettingsInput, SettingsSelect, SettingsTextarea, SettingsButton,
   SettingsDangerZone, SettingsSaveBar, SettingsSidebarItem, SettingsStatus,
 } from '../components/widgets/settings.js';
-import { useSettings, useUpdateSettings } from '../hooks/useSettings.js';
+import { useSettings, useUpdateSettings, useResetSettings } from '../hooks/useSettings.js';
 import { SkeletonBlock, ErrorState } from '../components/shared/Skeleton.js';
 const categoryIcons: Record<string, typeof SettingsIcon> = {
   general: SettingsIcon, appearance: Palette, notification: Bell,
@@ -20,11 +20,27 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useSettings();
   const updateSettings = useUpdateSettings();
+  const resetSettings = useResetSettings();
   const [activeCategory, setActiveCategory] = useState('general');
   const [settings, setSettings] = useState<Record<string, string | boolean | number>>({});
   const [originalSettings, setOriginalSettings] = useState<Record<string, string | boolean | number>>({});
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  useEffect(() => {
+    const allSettings = data?.settings ?? [];
+    const categories = data?.categories ?? [];
+    if (Object.keys(settings).length === 0 && allSettings.length > 0) {
+      const initial: Record<string, string | boolean | number> = {};
+      for (const setting of allSettings) {
+        initial[setting.id] = setting.value;
+      }
+      setSettings(initial);
+      setOriginalSettings({ ...initial });
+      if (categories.length > 0 && !categories.find((category) => category.id === activeCategory)) {
+        setActiveCategory(categories[0].id);
+      }
+    }
+  }, [data, settings, activeCategory]);
   if (isLoading) {
     return (
       <PageContainer>
@@ -62,26 +78,12 @@ export function SettingsPage() {
       </PageContainer>
     );
   }
-  const categories = data.categories;
-  const allSettings = data.settings;
-  useEffect(() => {
-    if (Object.keys(settings).length === 0 && allSettings.length > 0) {
-      const initial: Record<string, string | boolean | number> = {};
-      for (const s of allSettings) {
-        initial[s.id] = s.value;
-      }
-      setSettings(initial);
-      setOriginalSettings({ ...initial });
-      if (categories.length > 0 && !categories.find((c) => c.id === activeCategory)) {
-        const firstCategory = categories[0];
-        setActiveCategory(firstCategory.id);
-      }
-    }
-  }, [settings, allSettings, categories, activeCategory]);
+  const categories = data.categories ?? [];
+  const allSettings = data.settings ?? [];
   const hasChanges = Object.entries(settings).some(([key, val]) => val !== originalSettings[key]);
-  const updateSetting = useCallback((id: string, value: string | boolean | number) => {
+  const updateSetting = (id: string, value: string | boolean | number) => {
     setSettings((prev) => ({ ...prev, [id]: value }));
-  }, []);
+  };
   const handleSave = () => {
     setSaving(true);
     const updates = Object.entries(settings)
@@ -103,6 +105,24 @@ export function SettingsPage() {
   };
   const handleReset = () => {
     setSettings({ ...originalSettings });
+  };
+  const handleResetAll = () => {
+    if (!window.confirm('Reset all persisted dashboard settings to safe defaults?')) return;
+    resetSettings.mutate(undefined, {
+      onSuccess: async () => {
+        const refreshed = await refetch();
+        const nextSettings: Record<string, string | boolean | number> = {};
+        for (const setting of refreshed.data?.settings ?? []) nextSettings[setting.id] = setting.value;
+        setSettings(nextSettings);
+        setOriginalSettings({ ...nextSettings });
+        setStatus({ type: 'success', message: 'Settings reset to defaults' });
+        setTimeout(() => { setStatus(null); }, 3000);
+      },
+      onError: () => {
+        setStatus({ type: 'error', message: 'Failed to reset settings' });
+        setTimeout(() => { setStatus(null); }, 3000);
+      },
+    });
   };
   const currentSettings = allSettings.filter((s) => s.category === activeCategory);
   return (
@@ -191,7 +211,7 @@ export function SettingsPage() {
                       <p className="text-sm font-medium text-[hsl(var(--color-text))]">Reset All Settings</p>
                       <p className="text-xs text-[hsl(var(--color-muted))]">This will reset all dashboard settings to their default values.</p>
                     </div>
-                    <SettingsButton variant="danger" onClick={() => {}}>Reset All Settings</SettingsButton>
+                    <SettingsButton variant="danger" onClick={handleResetAll} disabled={resetSettings.isPending}>{resetSettings.isPending ? 'Resetting...' : 'Reset All Settings'}</SettingsButton>
                   </div>
                 </SettingsDangerZone>
               )}

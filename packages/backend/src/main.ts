@@ -7,6 +7,7 @@ import { registerRuntime } from './runtime/index.js';
 import { registerApplication } from './application/di.js';
 import { registerTransport } from './transport/di.js';
 import { createLifecycle } from './bootstrap/lifecycle.js';
+import { startSystemMetricsCollector } from './infrastructure/systemMetrics/collector.js';
 import { createModuleRegistry } from './modules/index.js';
 import type { LifecycleDependencies } from './bootstrap/lifecycle.js';
 function parseDatabaseUrl(url?: string): void {
@@ -45,13 +46,15 @@ async function main(): Promise<void> {
   await seedRunner.runAll();
   logger.success('Database seeds applied');
   registerRuntime(container, env, logger);
+  const redisConnection = container.resolve('redisConnection') as { connect: () => Promise<void>; disconnect: () => Promise<void> };
+  await redisConnection.connect();
   logger.success('Redis connected');
   registerApplication(container, logger);
   logger.success('Application services registered');
+  const stopMetricsCollector = startSystemMetricsCollector(container, logger);
   const httpServer = registerTransport(container, env, logger);
   const wsServer = container.resolve('wsServer') as { stop: () => Promise<void> } | undefined;
   const dbConnection = container.resolve('dbConnection') as { disconnect: () => Promise<void> } | undefined;
-  const redisConnection = container.resolve('redisConnection') as { disconnect: () => Promise<void> } | undefined;
   const eventBus = container.resolve('eventPublisher') as { stop: () => Promise<void> } | undefined;
   const deps: LifecycleDependencies = {
     logger,
@@ -65,6 +68,7 @@ async function main(): Promise<void> {
   const lifecycle = createLifecycle(deps);
   const shutdownHandler = (signal: string) => {
     logger.info(`Received ${signal}, shutting down...`);
+    stopMetricsCollector();
     lifecycle.shutdown().catch((err: unknown) => {
       logger.error('Shutdown failed', err instanceof Error ? err : new Error(String(err)));
       process.exit(1);

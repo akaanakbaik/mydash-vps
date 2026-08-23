@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { DrizzleClient } from '../../persistence/connection.js';
 import { makeTransactionalDb } from '../../persistence/repository/transactionContext.js';
 import { configurations } from '../../persistence/schema/security.js';
@@ -22,15 +22,17 @@ export class ConfigurationRepositoryImpl implements ConfigurationRepository {
   async save(workspaceId: string, config: AppConfig): Promise<void> {
     const entries = Object.entries(config);
     for (const [key, value] of entries) {
-      await this.db.insert(configurations).values({
-        workspaceId,
-        key,
-        value: value as Record<string, unknown>,
-        category: key.split('.')[0] ?? 'general',
-      }).onConflictDoUpdate({
-        target: [configurations.workspaceId, configurations.key],
-        set: { value: value as Record<string, unknown> },
-      });
+      const existing = await this.db.select({ id: configurations.id }).from(configurations).where(and(eq(configurations.workspaceId, workspaceId), eq(configurations.key, key))).limit(1);
+      if (existing[0]) {
+        await this.db.update(configurations).set({ value: value as Record<string, unknown>, updatedAt: new Date() }).where(eq(configurations.id, existing[0].id));
+      } else {
+        await this.db.insert(configurations).values({
+          workspaceId,
+          key,
+          value: value as Record<string, unknown>,
+          category: key.split('.')[0] ?? 'general',
+        });
+      }
     }
   }
   getDefault(): AppConfig {

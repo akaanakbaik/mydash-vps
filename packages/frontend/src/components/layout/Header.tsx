@@ -13,6 +13,15 @@ interface MenuItemProps {
   href: string;
   onClose: () => void;
 }
+const READ_NOTIFICATION_KEY = 'mydash-read-notifications';
+function readNotificationIds(): string[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(READ_NOTIFICATION_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string').slice(-200) : [];
+  } catch {
+    return [];
+  }
+}
 function UserMenuItem({ icon: Icon, label, href, onClose }: MenuItemProps) {
   const navigate = useNavigate();
   return (
@@ -32,8 +41,18 @@ export function Header() {
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const openMobileDrawer = useAppStore((s) => s.openMobileDrawer);
   const { isMobile, breadcrumbs } = useLayout();
-  const { data: notifData } = useNotifications();
+  const { data: notifData, isFetching: isNotificationsFetching } = useNotifications();
   const activities = notifData?.activity ?? [];
+  const [readActivityIds, setReadActivityIds] = useState<string[]>(readNotificationIds);
+  const unreadActivities = activities.filter((activity) => !readActivityIds.includes(activity.id));
+  const unreadCount = unreadActivities.length;
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(READ_NOTIFICATION_KEY, JSON.stringify(readActivityIds.slice(-200)));
+    } catch {
+      return;
+    }
+  }, [readActivityIds]);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -95,49 +114,38 @@ export function Header() {
         {}
         <button
           onClick={toggle}
-          className="rounded-lg p-2 text-[hsl(var(--color-muted))] transition-colors hover:bg-[hsl(var(--color-border))] hover:text-[hsl(var(--color-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-[hsl(var(--color-muted))] transition-colors hover:bg-[hsl(var(--color-border))] hover:text-[hsl(var(--color-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]"
           aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
         >
           {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" aria-hidden="true" /> : <Moon className="h-[18px] w-[18px]" aria-hidden="true" />}
         </button>
         {}
         <div ref={notifRef} className="relative">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setUserMenuOpen(false); }}
-            className="relative rounded-lg p-2 text-[hsl(var(--color-muted))] transition-colors hover:bg-[hsl(var(--color-border))] hover:text-[hsl(var(--color-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]"
-            aria-label="Notifications"
+            type="button"
+            onClick={() => { setNotifOpen((open) => !open); setUserMenuOpen(false); }}
+            className="relative flex min-h-11 min-w-11 items-center justify-center rounded-xl text-[hsl(var(--color-muted))] transition-colors hover:bg-[hsl(var(--color-border))] hover:text-[hsl(var(--color-text))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]"
+            aria-label={unreadCount > 0 ? `${String(unreadCount)} unread notifications` : 'Notifications'}
             aria-expanded={notifOpen}
+            aria-haspopup="dialog"
           >
-            <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
-            {activities.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[hsl(var(--color-danger))] text-[9px] font-bold text-white">
-                {activities.length}
-              </span>
-            )}
+            <Bell className={cn('h-[18px] w-[18px]', isNotificationsFetching && 'animate-pulse')} aria-hidden="true" />
+            {unreadCount > 0 && <span className="absolute right-1 top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-[hsl(var(--color-danger))] px-1 text-[9px] font-bold text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
           {notifOpen && (
-            <div className="skeuo-raised absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl p-3 shadow-2xl">
-              <p className="mb-2 px-2 text-xs font-semibold text-[hsl(var(--color-text))]">Recent Activity</p>
-              <div className="space-y-1 max-h-[320px] overflow-y-auto app-scrollbar">
-                {activities.length > 0 ? (
-                  activities.slice(0, 5).map((act) => (
-                    <div key={act.id} className={cn('rounded-lg p-2 transition-colors hover:bg-[hsl(var(--color-surface-raised)/0.3)]', act.severity === 'critical' || act.severity === 'error' ? 'bg-[hsl(var(--color-danger))]/5' : '')}>
-                      <p className="text-xs font-medium text-[hsl(var(--color-text))]">{act.message}</p>
-                      <p className="text-[10px] text-[hsl(var(--color-muted))]">{new Date(act.timestamp).toLocaleString()}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-xs text-[hsl(var(--color-muted))]">No recent notifications</p>
-                  </div>
-                )}
+            <div className="skeuo-raised absolute right-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),20rem)] rounded-2xl p-3 shadow-2xl" role="dialog" aria-label="Recent notifications">
+              <div className="mb-2 flex items-center justify-between gap-3 px-2">
+                <div><p className="text-xs font-semibold text-[hsl(var(--color-text))]">Recent Activity</p><p className="mt-0.5 text-[10px] text-[hsl(var(--color-muted))]">{unreadCount > 0 ? `${String(unreadCount)} unread` : 'All caught up'}</p></div>
+                {unreadCount > 0 && <button type="button" onClick={() => setReadActivityIds((current) => [...new Set([...current, ...unreadActivities.map((item) => item.id)])])} className="rounded-lg px-2 py-1.5 text-[10px] font-semibold text-[hsl(var(--color-primary))] transition-colors hover:bg-[hsl(var(--color-primary))]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]">Mark all read</button>}
               </div>
-              <button
-                onClick={() => { setNotifOpen(false); void navigate('/notifications'); }}
-                className="mt-2 w-full rounded-lg py-1.5 text-center text-[10px] font-medium text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary))]/5"
-              >
-                View all notifications
-              </button>
+              <div className="app-scrollbar max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto">
+                {activities.length > 0 ? activities.slice(0, 6).map((act) => {
+                  const unread = !readActivityIds.includes(act.id);
+                  return <button type="button" key={act.id} onClick={() => setReadActivityIds((current) => current.includes(act.id) ? current : [...current, act.id])} className={cn('flex w-full items-start gap-2 rounded-xl p-2 text-left transition-colors hover:bg-[hsl(var(--color-surface-raised)/0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]', unread && 'bg-[hsl(var(--color-primary))]/5')}><span className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', unread ? 'bg-[hsl(var(--color-primary))]' : 'bg-[hsl(var(--color-border-strong))]')} aria-hidden="true" /><span className="min-w-0 flex-1"><span className="block break-words text-xs font-medium text-[hsl(var(--color-text))]">{act.message}</span><span className="mt-1 block text-[10px] text-[hsl(var(--color-muted))]">{new Date(act.timestamp).toLocaleString()}</span></span></button>;
+                }) : <div className="py-8 text-center"><p className="text-xs text-[hsl(var(--color-muted))]">No recent notifications</p></div>}
+              </div>
+              <button type="button" onClick={() => { setNotifOpen(false); void navigate('/notifications'); }} className="mt-2 min-h-10 w-full rounded-xl py-1.5 text-center text-[10px] font-semibold text-[hsl(var(--color-primary))] transition-colors hover:bg-[hsl(var(--color-primary))]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]">View all notifications</button>
             </div>
           )}
         </div>

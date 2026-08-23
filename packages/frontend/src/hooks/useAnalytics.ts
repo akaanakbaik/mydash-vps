@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { analyticsRepository } from '../repositories/analytics.js';
 import { queryKeys } from '../api/queryKeys.js';
-export function useAnalytics() {
+export function useAnalytics(range = '7d') {
   return useQuery({
-    queryKey: queryKeys.analytics.summary(),
-    queryFn: () => analyticsRepository.getSummary().then((res) => res.data),
+    queryKey: queryKeys.analytics.summary({ range }),
+    queryFn: () => analyticsRepository.getSummary(range).then((res) => res.data),
     staleTime: 30_000,
   });
 }

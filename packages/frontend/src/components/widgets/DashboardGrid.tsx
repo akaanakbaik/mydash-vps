@@ -27,7 +27,7 @@ export function DashboardGrid({
   return (
     <div
       className={cn(
-        'grid',
+        'grid min-w-0',
         colMap[cols],
         colsSm && `sm:${colMap[colsSm]}`,
         colsMd && `md:${colMap[colsMd]}`,
@@ -51,9 +51,9 @@ interface DashboardSectionProps {
 export function DashboardSection({ title, subtitle, children, className, action }: DashboardSectionProps) {
   return (
     <section className={cn('space-y-4', className)}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between gap-4 border-b border-[hsl(var(--color-border))]/45 pb-3">
         <div>
-          <h2 className="text-base font-semibold text-[hsl(var(--color-text))]">{title}</h2>
+          <h2 className="text-base font-semibold tracking-tight text-[hsl(var(--color-text))]">{title}</h2>
           {subtitle && <p className="mt-0.5 text-sm text-[hsl(var(--color-muted))]">{subtitle}</p>}
         </div>
         {action && <div>{action}</div>}

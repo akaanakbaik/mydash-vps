@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { cn } from '../../utils/cn.js';
 import { DashboardGrid } from './DashboardGrid.js';
 import { DashboardWidgetContainer } from './DashboardWidgetContainer.js';
-import { getMockPluginData, type Plugin, type PluginData } from '../../services/mockPlugin.js';
+import type { Plugin, PluginResponse } from '../../repositories/plugin.js';
 const pluginStatusConfig: Record<string, { color: string; label: string; icon: LucideIcon }> = {
   installed: { color: 'hsl(var(--color-success))', label: 'Installed', icon: CheckCircle },
   available: { color: 'hsl(var(--color-info))', label: 'Available', icon: Download },
@@ -82,7 +82,7 @@ export function PluginFilter({ value, onChange }: { value: string; onChange: (v:
     </div>
   );
 }
-export function PluginOverview({ data }: { data: PluginData }) {
+export function PluginOverview({ data }: { data: PluginResponse }) {
   const stats = [
     { label: 'Total Plugins', value: data.plugins.length, icon: Package },
     { label: 'Installed', value: data.plugins.filter((p: Plugin) => p.status === 'installed').length, icon: CheckCircle },
@@ -181,15 +181,13 @@ export function PluginCard({ plugin, onAction }: { plugin: Plugin; onAction?: (n
     </DashboardWidgetContainer>
   );
 }
-export function PluginMarketplaceCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginMarketplaceCard({ plugins }: { plugins: Plugin[] }) {
   const available = plugins.filter((p: Plugin) => p.status === 'available' || p.status === 'update_available');
   return (
     <DashboardWidgetContainer title="Marketplace">
       <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-foreground))]">Marketplace</h3>
       <div className="space-y-2">
-        {available.slice(0, 5).map((p: Plugin) => (
+        {available.length === 0 ? <PluginEmptyState title="Marketplace is empty" description="No marketplace plugins are available from the connected backend." /> : available.slice(0, 5).map((p: Plugin) => (
           <div key={p.id} className="flex items-center justify-between rounded-lg bg-[hsl(var(--color-muted))] p-2.5">
             <div className="flex items-center gap-2.5">
               <CatIcon category={p.category} />
@@ -209,15 +207,13 @@ function CatIcon({ category }: { category: string }) {
   const Icon = categoryIcons[category] ?? Puzzle;
   return <Icon className="h-4 w-4 text-[hsl(var(--color-primary))]" aria-hidden="true" />;
 }
-export function PluginInstalledCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginInstalledCard({ plugins }: { plugins: Plugin[] }) {
   const installed = plugins.filter((p: Plugin) => p.status === 'installed');
   return (
     <DashboardWidgetContainer title={'Installed (' + String(installed.length) + ')'}>
       <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-foreground))]">Installed ({installed.length})</h3>
       <div className="space-y-2">
-        {installed.map((p: Plugin) => (
+        {installed.length === 0 ? <PluginEmptyState title="No installed plugins" /> : installed.map((p: Plugin) => (
           <div key={p.id} className="flex items-center justify-between rounded-lg bg-[hsl(var(--color-muted))] p-2.5">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[hsl(var(--color-background))]">
@@ -237,9 +233,7 @@ export function PluginInstalledCard() {
     </DashboardWidgetContainer>
   );
 }
-export function PluginCategoryCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginCategoryCard({ plugins }: { plugins: Plugin[] }) {
   const categories = useMemo(() => {
     const map = new Map<string, number>();
     plugins.forEach((p: Plugin) => map.set(p.category, (map.get(p.category) ?? 0) + 1));
@@ -262,9 +256,7 @@ export function PluginCategoryCard() {
     </DashboardWidgetContainer>
   );
 }
-export function PluginDependencyCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginDependencyCard({ plugins }: { plugins: Plugin[] }) {
   const withDeps = plugins.filter((p: Plugin) => p.dependencies.length > 0);
   return (
     <DashboardWidgetContainer title="Dependencies">
@@ -301,9 +293,7 @@ export function PluginDependencyCard() {
     </DashboardWidgetContainer>
   );
 }
-export function PluginPermissionCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginPermissionCard({ plugins }: { plugins: Plugin[] }) {
   const permissions = useMemo(() => {
     const set = new Set<string>();
     plugins.forEach((p: Plugin) => { p.permissions.forEach((perm: string) => { set.add(perm); }); });
@@ -326,15 +316,13 @@ export function PluginPermissionCard() {
     </DashboardWidgetContainer>
   );
 }
-export function PluginVersionCard() {
-  const data: PluginData = getMockPluginData();
-  const { plugins } = data;
+export function PluginVersionCard({ plugins }: { plugins: Plugin[] }) {
   const withUpdates = plugins.filter((p: Plugin) => p.status === 'update_available');
   return (
     <DashboardWidgetContainer title="Version Overview">
       <h3 className="mb-3 text-sm font-semibold text-[hsl(var(--color-foreground))]">Version Overview</h3>
       <div className="space-y-2">
-        {plugins.slice(0, 6).map((p: Plugin) => (
+        {plugins.length === 0 ? <PluginEmptyState title="No plugin versions" /> : plugins.slice(0, 6).map((p: Plugin) => (
           <div key={p.id} className="flex items-center justify-between">
             <span className="text-xs text-[hsl(var(--color-foreground))]">{p.name}</span>
             <div className="flex items-center gap-2">

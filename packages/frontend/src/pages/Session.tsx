@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid, DashboardSection } from '../components/widgets/DashboardGrid.js';
@@ -15,6 +15,7 @@ import { ErrorState } from '../components/shared/Skeleton.js';
 export function SessionPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, isFetching, refetch } = useSessions();
+  const revokeMutation = useRevokeSessionMutation();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   if (isLoading) {
@@ -54,15 +55,14 @@ export function SessionPage() {
       </PageContainer>
     );
   }
-  const revokeMutation = useRevokeSessionMutation();
-  const handleRevoke = useCallback((sessionId: string, sessionName: string) => {
+  const handleRevoke = (sessionId: string, sessionName: string) => {
     if (window.confirm(`Revoke session "${sessionName}"? This will log out that device.`)) {
       revokeMutation.mutate(sessionId);
     }
-  }, [revokeMutation]);
+  };
   const currentSession = data.sessions.find((s) => s.isCurrent);
   const otherSessions = data.sessions.filter((s) => !s.isCurrent);
-  const filteredSessions = useMemo(() => {
+  const filteredSessions = (() => {
     let entries = otherSessions;
     if (statusFilter !== 'all') entries = entries.filter((s) => s.status === statusFilter);
     if (search) {
@@ -70,7 +70,7 @@ export function SessionPage() {
       entries = entries.filter((s) => s.name.toLowerCase().includes(q) || s.device.toLowerCase().includes(q) || s.ip.includes(q));
     }
     return entries;
-  }, [otherSessions, statusFilter, search]);
+  })();
   const filterOptions = [
     { id: 'all', label: 'All' },
     { id: 'active', label: 'Active' },

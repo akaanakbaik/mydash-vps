@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '../components/layout/PageContainer.js';
 import { DashboardGrid } from '../components/widgets/DashboardGrid.js';
@@ -54,7 +54,7 @@ export function AuditPage() {
       </PageContainer>
     );
   }
-  const filteredRecords = useMemo(() => {
+  const filteredRecords = (() => {
     let entries = data.records;
     if (actionFilter !== 'all') entries = entries.filter((r) => r.action === actionFilter);
     if (userFilter !== 'all') entries = entries.filter((r) => r.user === userFilter);
@@ -63,7 +63,7 @@ export function AuditPage() {
       entries = entries.filter((r) => r.details.toLowerCase().includes(q) || r.user.toLowerCase().includes(q) || r.resource.toLowerCase().includes(q) || r.ip.includes(q));
     }
     return entries;
-  }, [data.records, actionFilter, userFilter, search]);
+  })();
   const uniqueUsers = [...new Set(data.records.map((r) => r.user))];
   return (
     <PageContainer>

@@ -20,7 +20,7 @@ COPY packages/shared/ packages/shared/
 COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=deps /app/packages/shared/node_modules /app/packages/shared/node_modules
 COPY --from=configs /app/tsconfig.base.json ./
-RUN bun run --cwd packages/shared build
+RUN rm -f packages/shared/tsconfig.tsbuildinfo && bun run --cwd packages/shared build
 
 # Build frontend
 FROM base AS frontend-builder
@@ -34,7 +34,7 @@ COPY packages/shared/package.json packages/shared/
 COPY packages/shared/src/ packages/shared/src/
 COPY --from=configs /app/tsconfig.base.json ./
 # Skip tsc -b in Docker (project references need full source tree), just run vite build
-RUN cd packages/frontend && bunx vite build
+RUN rm -f packages/frontend/tsconfig.tsbuildinfo && cd packages/frontend && bunx vite build
 
 # Build backend
 FROM base AS backend-builder
@@ -47,7 +47,7 @@ COPY packages/shared/tsconfig.json packages/shared/
 COPY packages/shared/package.json packages/shared/
 COPY packages/shared/src/ packages/shared/src/
 COPY --from=configs /app/tsconfig.base.json ./
-RUN bun run --cwd packages/backend build
+RUN rm -f packages/backend/tsconfig.tsbuildinfo && bun run --cwd packages/backend build
 
 # Production image
 FROM oven/bun:1.3.14-alpine AS runner

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { PageContainer } from '../components/layout/PageContainer.js';
@@ -24,7 +24,7 @@ export function AnalyticsPage() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
-  const { data, isLoading, isError, isFetching, refetch } = useAnalytics();
+  const { data, isLoading, isError, isFetching, refetch } = useAnalytics(timeWindow);
   if (isLoading) {
     return (
       <PageContainer maxWidth="xl">
@@ -49,7 +49,7 @@ export function AnalyticsPage() {
       </PageContainer>
     );
   }
-  const filteredData = useMemo(() => {
+  const filteredData = (() => {
     let rows = data.tableData;
     if (categoryFilter !== 'all') {
       rows = rows.filter((r) => r.category.toLowerCase() === categoryFilter.toLowerCase());
@@ -59,7 +59,7 @@ export function AnalyticsPage() {
       rows = rows.filter((r) => r.metric.toLowerCase().includes(q));
     }
     return rows;
-  }, [data.tableData, categoryFilter, searchQuery]);
+  })();
   const columns = [
     columnHelper.accessor('metric', {
       header: 'Metric',

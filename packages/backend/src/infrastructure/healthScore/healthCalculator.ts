@@ -1,66 +1,109 @@
-import type { HealthScore, DomainScore } from '@mydash/shared';
 import type { HealthCalculator, HealthWeightConfig } from '../../domain/healthScore/services.js';
 import type { MetricRepository } from '../../domain/monitoring/repository.js';
 import type { AnalyticsRepository } from '../../domain/analytics/index.js';
 import type { Logger } from '../../logging/index.js';
+import { HealthDomain, HealthGrade, MetricType } from '@mydash/shared';
+import type { DomainScore, HealthFactor, HealthScore, Metric } from '@mydash/shared';
+
+function finite(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function utilizationScore(value: unknown): number | null {
+  const normalized = finite(value);
+  if (normalized === null) return null;
+  return Math.min(100, Math.max(0, 100 - normalized));
+}
+
+function gradeFor(score: number): HealthGrade {
+  if (score >= 98) return HealthGrade.APlus;
+  if (score >= 93) return HealthGrade.A;
+  if (score >= 85) return HealthGrade.B;
+  if (score >= 75) return HealthGrade.C;
+  if (score >= 60) return HealthGrade.D;
+  return HealthGrade.F;
+}
+
 export class HealthScoreCalculator implements HealthCalculator {
   constructor(
-    _metricRepo: MetricRepository,
-    _analyticsRepo: AnalyticsRepository,
+    private readonly metricRepo: MetricRepository,
+    private readonly analyticsRepo: AnalyticsRepository,
     private readonly logger: Logger,
   ) {}
+
   getDefaultWeights(): HealthWeightConfig {
-    return { cpu: 0.15, memory: 0.15, disk: 0.15, network: 0.10, docker: 0.10, tunnel: 0.20, service: 0.15 };
+    return { cpu: 0.33, memory: 0.28, disk: 0.24, network: 0.10, docker: 0, tunnel: 0.05, service: 0 };
   }
+
   async calculate(serverId: string, workspaceId: string): Promise<HealthScore> {
-    await Promise.resolve();
+    void this.analyticsRepo;
     this.logger.debug('calculating health score', { serverId });
-    const w = this.getDefaultWeights();
-    const overall = w.cpu * 95 + w.memory * 90 + w.disk * 85 + w.tunnel * 80 + w.service * 90 + w.network * 95;
-    const now = new Date();
-    let grade = 'F' as never;
-    if (overall >= 90) grade = 'A' as never;
-    else if (overall >= 80) grade = 'B' as never;
-    else if (overall >= 70) grade = 'C' as never;
-    else if (overall >= 60) grade = 'D' as never;
-    const domainScores: DomainScore[] = [
-      { domain: 'cpu' as never, score: 95, weight: w.cpu, confidence: 0.9 },
-      { domain: 'memory' as never, score: 90, weight: w.memory, confidence: 0.9 },
-      { domain: 'disk' as never, score: 85, weight: w.disk, confidence: 0.9 },
-      { domain: 'tunnel' as never, score: 80, weight: w.tunnel, confidence: 0.8 },
-      { domain: 'service' as never, score: 90, weight: w.service, confidence: 0.9 },
-      { domain: 'network' as never, score: 95, weight: w.network, confidence: 0.9 },
+    const [cpu, memory, disk, network] = await Promise.all([
+      this.metricRepo.findLatest(serverId, MetricType.CPU),
+      this.metricRepo.findLatest(serverId, MetricType.Memory),
+      this.metricRepo.findLatest(serverId, MetricType.Disk),
+      this.metricRepo.findLatest(serverId, MetricType.Network),
+    ]);
+    const weights = this.getDefaultWeights();
+    const candidates: Array<{ domain: HealthDomain; score: number | null; weight: number }> = [
+      { domain: HealthDomain.CPU, score: utilizationScore((cpu as Record<string, unknown> | null)?.usagePercent), weight: weights.cpu },
+      { domain: HealthDomain.Memory, score: utilizationScore((memory as Record<string, unknown> | null)?.memoryPressure), weight: weights.memory },
+      { domain: HealthDomain.Disk, score: utilizationScore((disk as Record<string, unknown> | null)?.usedPercent), weight: weights.disk },
+      { domain: HealthDomain.Network, score: networkScore(network), weight: weights.network },
     ];
+    const available = candidates.filter((item) => item.score !== null && item.weight > 0);
+    const weightTotal = available.reduce((total, item) => total + item.weight, 0);
+    const overall = weightTotal > 0 ? available.reduce((total, item) => total + (item.score ?? 0) * item.weight, 0) / weightTotal : 0;
+    const domainScores: DomainScore[] = available.map((item) => ({
+      domain: item.domain,
+      score: item.score ?? 0,
+      weight: item.weight / weightTotal,
+      confidence: 1,
+    }));
+    const factors: HealthFactor[] = available
+      .filter((item) => (item.score ?? 100) < 70)
+      .map((item) => ({
+        domain: item.domain,
+        description: `${item.domain} utilization requires attention`,
+        impact: Math.round(100 - (item.score ?? 0)),
+        penalty: Math.round(100 - (item.score ?? 0)),
+        bonus: 0,
+      }));
+    const score = Math.round(Math.min(100, Math.max(0, overall)) * 100) / 100;
     return {
       workspaceId,
       serverId,
-      overall: Math.min(100, Math.max(0, overall)),
-      grade,
-      confidence: 0.85,
+      overall: score,
+      grade: gradeFor(score),
+      confidence: Math.round((available.length / candidates.length) * 100) / 100,
       trend: 0,
       momentum: 0,
       acceleration: 0,
       domainScores,
-      factors: [],
-      calculatedAt: now.toISOString(),
+      factors,
+      calculatedAt: new Date().toISOString(),
     };
   }
+
   computeScores(scores: Record<string, number>): number {
-    const weights: Record<string, number> = {
-      cpu: 0.15, memory: 0.15, disk: 0.15, tunnel: 0.20, db: 0.20, automation: 0.15,
-    };
-    let total = 0;
-    for (const [key, score] of Object.entries(scores)) {
-      total += score * (weights[key] ?? 0);
-    }
-    return Math.min(100, Math.max(0, total));
+    const values = Object.values(scores).filter((value) => Number.isFinite(value));
+    if (values.length === 0) return 0;
+    const average = values.reduce((total, value) => total + value, 0) / values.length;
+    return Math.round(Math.min(100, Math.max(0, average)) * 100) / 100;
   }
+
   getGrade(score: number): string {
-    if (score >= 98) return 'A+';
-    if (score >= 93) return 'A';
-    if (score >= 85) return 'B';
-    if (score >= 75) return 'C';
-    if (score >= 60) return 'D';
-    return 'F';
+    return gradeFor(score);
   }
+}
+
+function networkScore(metric: Metric | null): number | null {
+  const data = metric as Record<string, unknown> | null;
+  if (!data) return null;
+  const packetLoss = finite(data.packetLossPercent);
+  const latency = finite(data.latencyMs);
+  if (packetLoss === null || latency === null || (packetLoss === 0 && latency === 0)) return null;
+  const packetScore = Math.max(0, 100 - packetLoss * 10);
+  const latencyScore = Math.max(0, 100 - latency / 5);
+  return Math.min(packetScore, latencyScore);
 }

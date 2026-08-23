@@ -40,17 +40,26 @@ export class AggregationEngineImpl implements AggregationEngine {
     return map;
   }
   private extractValues(metricType: MetricType, metrics: Metric[]): number[] {
-    switch (metricType) {
-      case MetricType.CPU:
-        return metrics.map((m) => (m as CpuMetric).usagePercent);
-      case MetricType.Memory:
-        return metrics.map((m) => (m as MemoryMetric).usedBytes);
-      case MetricType.Disk:
-        return metrics.map((m) => (m as DiskMetric).usedPercent);
-      case MetricType.Network:
-        return metrics.map((m) => (m as NetworkMetric).rxBytesPerSec + (m as NetworkMetric).txBytesPerSec);
-      default:
-        return [];
-    }
+    const values = (() => {
+      switch (metricType) {
+        case MetricType.CPU:
+          return metrics.map((m) => (m as CpuMetric).usagePercent);
+        case MetricType.Memory:
+          return metrics.map((m) => {
+            const memory = m as MemoryMetric;
+            return memory.totalBytes > 0 ? memory.usedBytes / memory.totalBytes * 100 : 0;
+          });
+        case MetricType.Disk:
+          return metrics.map((m) => (m as DiskMetric).usedPercent);
+        case MetricType.Network:
+          return metrics.map((m) => {
+            const network = m as NetworkMetric;
+            return (network.rxBytesPerSec + network.txBytesPerSec) / (1024 * 1024);
+          });
+        default:
+          return [];
+      }
+    })();
+    return values.filter((value) => Number.isFinite(value)).map((value) => Math.max(0, value));
   }
 }

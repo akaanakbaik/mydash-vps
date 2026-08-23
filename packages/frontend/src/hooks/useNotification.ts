@@ -5,8 +5,9 @@ export function useNotifications(params?: Record<string, unknown>) {
   return useQuery({
     queryKey: queryKeys.notifications.list(params),
     queryFn: () => notificationRepository.getAll(params).then((res) => res.data),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    staleTime: 20_000,
+    refetchInterval: () => document.visibilityState === 'visible' ? 30_000 : false,
+    refetchOnWindowFocus: true,
   });
 }
 export function useNotificationRules() {
