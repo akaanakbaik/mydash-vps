@@ -7,10 +7,12 @@ import socket
 import subprocess
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 
 OUTPUT = Path('/run/mydash-host-metrics/metrics.json')
 PREVIOUS_NETWORK = Path('/run/mydash-host-metrics/network-previous.json')
+PREVIOUS_DISK = Path('/run/mydash-host-metrics/disk-previous.json')
 
 def command(args):
     try:
@@ -103,18 +105,162 @@ def network_info():
     temporary_previous = PREVIOUS_NETWORK.with_suffix('.tmp')
     temporary_previous.write_text(json.dumps({'interface': interface, 'rxBytes': rx_bytes, 'txBytes': tx_bytes, 'timestamp': now}))
     os.replace(temporary_previous, PREVIOUS_NETWORK)
-    return {'interface': interface, 'ipv4': ipv4, 'ipv6': None, 'rxBytes': rx_bytes, 'txBytes': tx_bytes, 'rxSpeed': rx_speed, 'txSpeed': tx_speed, 'rateAvailable': rate_available}
+    ping_output = command(['ping', '-n', '-c', '1', '-W', '1', '1.1.1.1'])
+    latency_match = re.search(r'time[=<]([0-9.]+)\s*ms', ping_output)
+    latency_ms = round(float(latency_match.group(1)), 2) if latency_match else 0
+    latency_available = latency_match is not None
+    return {'interface': interface, 'ipv4': ipv4, 'ipv6': None, 'rxBytes': rx_bytes, 'txBytes': tx_bytes, 'rxSpeed': rx_speed, 'txSpeed': tx_speed, 'rateAvailable': rate_available, 'packetLossPercent': 0 if latency_available else 100, 'latencyMs': latency_ms, 'packetLossAvailable': latency_available, 'latencyAvailable': latency_available}
 
-SERVICE_NAMES = ['nginx', 'wings', 'pteroq', 'docker', 'cloudflared-kafa-store2', 'mydash-vps-backend', 'mydash-vps-postgres', 'mydash-vps-redis', 'mydash-cloudflared']
+def disk_io_info():
+    source = command(['findmnt', '-n', '-o', 'SOURCE', '/'])
+    device = re.sub(r'\d+$', '', source.rsplit('/', 1)[-1])
+    if not device:
+        return {'readBps': 0, 'writeBps': 0, 'available': False}
+    stats = {}
+    for line in Path('/proc/diskstats').read_text().splitlines():
+        fields = line.split()
+        if len(fields) >= 14 and fields[2] == device:
+            stats = {'readSectors': finite(fields[5], 0), 'writeSectors': finite(fields[9], 0)}
+            break
+    if not stats:
+        return {'readBps': 0, 'writeBps': 0, 'available': False}
+    now = time.time()
+    previous = None
+    try:
+        previous = json.loads(PREVIOUS_DISK.read_text())
+    except Exception:
+        previous = None
+    read_bps = 0
+    write_bps = 0
+    available = False
+    if isinstance(previous, dict) and previous.get('device') == device:
+        elapsed = now - finite(previous.get('timestamp'), now)
+        if elapsed > 0:
+            read_bps = max(0, (stats['readSectors'] - finite(previous.get('readSectors'), stats['readSectors'])) * 512 / elapsed)
+            write_bps = max(0, (stats['writeSectors'] - finite(previous.get('writeSectors'), stats['writeSectors'])) * 512 / elapsed)
+            available = True
+    temporary_previous = PREVIOUS_DISK.with_suffix('.tmp')
+    temporary_previous.write_text(json.dumps({'device': device, **stats, 'timestamp': now}))
+    os.replace(temporary_previous, PREVIOUS_DISK)
+    return {'readBps': round(read_bps, 2), 'writeBps': round(write_bps, 2), 'available': available}
 
-def service_states():
+SERVICE_NAMES = ['nginx', 'wings', 'pteroq', 'docker']
+
+def parse_size(value):
+    match = re.search(r'([0-9]+(?:\.[0-9]+)?)\s*(B|KiB|MiB|GiB|TiB|KB|MB|GB|TB)', value or '', re.IGNORECASE)
+    if not match:
+        return 0
+    number = float(match.group(1))
+    unit = match.group(2).lower()
+    multipliers = {'b': 1, 'kib': 1024, 'mib': 1048576, 'gib': 1073741824, 'tib': 1099511627776, 'kb': 1000, 'mb': 1000000, 'gb': 1000000000, 'tb': 1000000000000}
+    return int(number * multipliers.get(unit, 1))
+
+def parse_percent(value):
+    result = finite(str(value).replace('%', '').strip())
+    return max(0, min(100, result or 0))
+
+def docker_started_seconds(value):
+    try:
+        parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return max(0, int(time.time() - parsed.timestamp()))
+    except Exception:
+        return 0
+
+def docker_snapshot(total_ram_mb):
+    empty = {'containers': [], 'images': [], 'volumes': [], 'networks': [], 'totalCpu': 0, 'totalMemory': 0, 'containerCount': 0, 'runningCount': 0, 'stoppedCount': 0, 'health': 'unavailable'}
+    if not command(['docker', 'version', '--format', '{{.Server.Version}}']):
+        return empty
+    ps_lines = command(['docker', 'ps', '-a', '--format', '{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.State}}\t{{.Ports}}']).splitlines()
+    stats_lines = command(['docker', 'stats', '--no-stream', '--format', '{{.ID}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}']).splitlines()
+    stats = {}
+    for line in stats_lines:
+        parts = line.split('\t')
+        if len(parts) >= 4:
+            stats[parts[0]] = {'cpu': parse_percent(parts[1]), 'memory': parse_size(parts[2].split('/', 1)[0]), 'memoryPercent': parse_percent(parts[3])}
+    inspect_format = '{{.Id}}\t{{.Created}}\t{{.State.StartedAt}}\t{{.RestartCount}}\t{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}'
+    container_ids = [line.split('\t', 1)[0] for line in ps_lines if line]
+    inspect_lines = command(['docker', 'inspect', '--format', inspect_format, *container_ids]).splitlines() if container_ids else []
+    inspected_by_id = {parts[0]: parts[1:] for parts in (line.split('\t') for line in inspect_lines) if len(parts) >= 5}
+    containers = []
+    for line in ps_lines:
+        parts = line.split('\t', 4)
+        if len(parts) < 5:
+            continue
+        container_id, name, image, status, ports = parts
+        inspected = inspected_by_id.get(container_id, [])
+        created = inspected[0] if len(inspected) > 0 else ''
+        started_at = inspected[1] if len(inspected) > 1 else ''
+        restart_count = int(finite(inspected[2]) or 0) if len(inspected) > 2 else 0
+        health_status = inspected[3] if len(inspected) > 3 else 'none'
+        stat = stats.get(container_id, {'cpu': 0, 'memory': 0, 'memoryPercent': 0})
+        containers.append({'id': container_id, 'name': name, 'image': image, 'status': status.lower(), 'cpuPercent': stat['cpu'], 'memoryPercent': stat['memoryPercent'], 'memoryBytes': stat['memory'], 'ports': ports or 'none', 'restartCount': restart_count, 'created': created, 'startedAt': started_at, 'healthStatus': health_status, 'uptimeSeconds': docker_started_seconds(started_at)})
+    image_lines = command(['docker', 'images', '--format', '{{.ID}}\t{{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}']).splitlines()
+    images = []
+    for line in image_lines:
+        parts = line.split('\t', 4)
+        if len(parts) < 5:
+            continue
+        images.append({'id': parts[0], 'repository': parts[1], 'tag': parts[2], 'size': parse_size(parts[3]), 'created': parts[4]})
+    volume_lines = command(['docker', 'volume', 'ls', '--format', '{{.Name}}\t{{.Driver}}']).splitlines()
+    volumes = []
+    for line in volume_lines:
+        parts = line.split('\t', 1)
+        if len(parts) == 2:
+            mount = command(['docker', 'volume', 'inspect', '--format', '{{.Mountpoint}}', parts[0]])
+            size_text = command(['du', '-sb', mount]) if mount.startswith('/var/lib/docker/volumes/') else ''
+            size_parts = size_text.split()
+            size = int(finite(size_parts[0]) or 0) if size_parts else None
+            volumes.append({'name': parts[0], 'driver': parts[1], 'mountPoint': mount, 'size': size, 'status': 'available'})
+    network_lines = command(['docker', 'network', 'ls', '--format', '{{.ID}}\t{{.Name}}\t{{.Driver}}']).splitlines()
+    networks = []
+    for line in network_lines:
+        parts = line.split('\t', 2)
+        if len(parts) < 3:
+            continue
+        inspect = command(['docker', 'network', 'inspect', '--format', '{{range .IPAM.Config}}{{.Subnet}}{{end}}\t{{len .Containers}}', parts[0]]).split('\t')
+        networks.append({'name': parts[1], 'driver': parts[2], 'subnet': inspect[0] if inspect and inspect[0] else 'none', 'containers': int(finite(inspect[1]) or 0) if len(inspect) > 1 else 0})
+    running = sum(1 for item in containers if item['status'] == 'running')
+    used_memory = sum(item['memoryBytes'] for item in containers)
+    host_memory = max(1, int(total_ram_mb or 0) * 1048576)
+    unhealthy = any(item['healthStatus'] == 'unhealthy' for item in containers)
+    health = 'unhealthy' if unhealthy else 'healthy'
+    return {'containers': containers[:128], 'images': images[:128], 'volumes': volumes[:128], 'networks': networks[:128], 'totalCpu': round(sum(item['cpuPercent'] for item in containers), 2), 'totalMemory': round(used_memory / host_memory * 100, 2), 'containerCount': len(containers), 'runningCount': running, 'stoppedCount': max(0, len(containers) - running), 'health': health}
+
+def process_metrics(service_name):
+    pid_text = command(['systemctl', 'show', service_name, '--property=MainPID', '--value'])
+    pid = int(finite(pid_text) or 0)
+    if pid <= 0:
+        return {'cpuPercent': 0, 'memoryBytes': 0, 'uptimeSeconds': 0, 'ports': []}
+    values = command(['ps', '-p', str(pid), '-o', 'pcpu=,rss=,etimes=']).split()
+    cpu = float(finite(values[0]) or 0) if len(values) > 0 else 0
+    memory = int(finite(values[1]) or 0) * 1024 if len(values) > 1 else 0
+    uptime_seconds = int(finite(values[2]) or 0) if len(values) > 2 else 0
+    ports = []
+    for line in command(['ss', '-ltnpH']).splitlines():
+        if f'pid={pid},' not in line:
+            continue
+        local = line.split()[3]
+        port = local.rsplit(':', 1)[-1]
+        if port.isdigit():
+            ports.append(int(port))
+    return {'cpuPercent': max(0, min(100, cpu)), 'memoryBytes': max(0, memory), 'uptimeSeconds': max(0, uptime_seconds), 'ports': sorted(set(ports))[:8]}
+
+def service_states(docker_data):
     states = {}
     details = []
+    observed_at = time.time()
     for name in SERVICE_NAMES:
         active = command(['systemctl', 'is-active', name]) or 'unknown'
         enabled = command(['systemctl', 'is-enabled', name]) or 'unknown'
+        metrics = process_metrics(name)
         states[name] = active
-        details.append({'name': name, 'activeState': active, 'enabledState': enabled, 'observedAt': time.time()})
+        details.append({'name': name, 'activeState': active, 'enabledState': enabled, 'observedAt': observed_at, **metrics})
+    for container in docker_data['containers']:
+        name = container['name']
+        state = 'active' if container['status'] == 'running' else container['status']
+        states[name] = state
+        port_values = [int(value) for value in re.findall(r'0\.0\.0\.0:(\d+)->', container['ports'])]
+        details.append({'name': name, 'activeState': state, 'enabledState': 'container', 'observedAt': observed_at, 'cpuPercent': container['cpuPercent'], 'memoryBytes': container['memoryBytes'], 'uptimeSeconds': container.get('uptimeSeconds', 0), 'ports': sorted(set(port_values))[:8]})
     return states, details
 
 def disk_top_directories():
@@ -162,6 +308,18 @@ def filesystem_name():
             return fields[1]
     return None
 
+def inode_usage():
+    output = command(['df', '-Pi', '/'])
+    rows = output.splitlines()
+    if len(rows) < 2:
+        return {'percent': 0, 'available': False}
+    fields = rows[1].split()
+    if len(fields) < 6 or not fields[4].endswith('%') or fields[4] == '-':
+        return {'percent': 0, 'available': False}
+    value = finite(fields[4].rstrip('%'))
+    return {'percent': max(0, min(100, value or 0)), 'available': value is not None}
+
+
 def swap_info():
     values = {}
     for line in Path('/proc/meminfo').read_text().splitlines():
@@ -176,12 +334,15 @@ def snapshot():
     model, cores, speed = cpu_info()
     memory = memory_info()
     disk = shutil.disk_usage('/')
+    inode = inode_usage()
     swap = swap_info()
     boot = command(['uptime', '-s']) or None
     uptime_text = command(['uptime', '-p']) or None
     load = os.getloadavg()
     uptime_seconds = finite(command(['cat', '/proc/uptime']).split()[0] if command(['cat', '/proc/uptime']) else None)
-    services, service_details = service_states()
+    docker_data = docker_snapshot(memory['totalMB'] if memory else 0)
+    disk_io = disk_io_info()
+    services, service_details = service_states(docker_data)
     return {
         'hostname': socket.gethostname(),
         'os': distro_name(),
@@ -207,6 +368,11 @@ def snapshot():
         'usedDiskMB': round((disk.total - disk.free) / 1048576),
         'freeDiskMB': round(disk.free / 1048576),
         'diskUsagePercent': round((disk.total - disk.free) / disk.total * 100, 2) if disk.total else None,
+        'inodeUsagePercent': inode['percent'],
+        'inodeUsageAvailable': inode['available'],
+        'diskReadBps': disk_io['readBps'],
+        'diskWriteBps': disk_io['writeBps'],
+        'diskIoAvailable': disk_io['available'],
         'bootTime': boot,
         'uptimeSeconds': uptime_seconds,
         'uptimeFormatted': uptime_text,
@@ -217,6 +383,7 @@ def snapshot():
         'services': services,
         'serviceDetails': service_details,
         'agentVersion': 'host-agent-1.0.0',
+        'docker': docker_data,
         'updatedAt': time.time(),
     }
 

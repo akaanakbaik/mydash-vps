@@ -12,7 +12,7 @@ type MetricRow = { id: string; metricType: string; data: unknown; recordedAt: Da
 type RecordValue = Record<string, unknown>;
 type RangeKey = '1h' | '6h' | '24h' | '7d' | '30d';
 const rangeMap: Record<RangeKey, number> = { '1h': 3600000, '6h': 21600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
-const serviceNames = ['nginx', 'wings', 'pteroq', 'docker', 'cloudflared-kafa-store2', 'mydash-vps-backend', 'mydash-vps-postgres', 'mydash-vps-redis', 'mydash-cloudflared'];
+const requiredServiceNames = ['nginx', 'wings', 'pteroq', 'docker'];
 
 function record(value: unknown): RecordValue {
   return value && typeof value === 'object' ? value as RecordValue : {};
@@ -114,9 +114,9 @@ function diskDetails(system: ReturnType<typeof collectSystemMetrics>, rows: Metr
     usedBytes,
     availableBytes: system.freeDiskMB * 1048576,
     usedPercent: finite(system.diskUsagePercent),
-    inodeUsage: null,
-    readSpeedBps: finite(data.readSpeedBps),
-    writeSpeedBps: finite(data.writeSpeedBps),
+    inodeUsage: system.inodeUsageAvailable ? system.inodeUsagePercent : null,
+    readSpeedBps: finite(data.readSpeedBps) ?? (system.diskIoAvailable ? system.diskReadBps : null),
+    writeSpeedBps: finite(data.writeSpeedBps) ?? (system.diskIoAvailable ? system.diskWriteBps : null),
     topDirectories,
     directoryScanStatus: topDirectories.length > 0 ? 'available' : 'unavailable',
     sampledAt: iso(row?.recordedAt) ?? new Date().toISOString(),
@@ -136,13 +136,18 @@ function serviceDetails(system: ReturnType<typeof collectSystemMetrics>, rows: M
     if (!name || currentByName.has(name)) continue;
     currentByName.set(name, { name, activeState: text(data.activeState, text(data.status, 'unknown')), enabledState: data.enabled === true ? 'enabled' : 'unknown', observedAt: number(data.observedAt, dateValue(row.recordedAt)?.getTime() ?? 0) });
   }
+  const serviceNames = Array.from(new Set([...requiredServiceNames, ...system.serviceDetails.map((item) => item.name)]));
   return serviceNames.map((name) => {
     const item = currentByName.get(name);
     const activeState = item?.activeState ?? 'unavailable';
     const history = rows.filter((row) => row.metricType === 'service' && text(metricRecord(row).serviceName) === name);
-    const lastSeen = history.map((row) => iso(row.recordedAt)).filter((value): value is string => Boolean(value)).sort().at(-1) ?? null;
+    const currentStatus = serviceStatus(activeState);
+    const observedAt = item?.observedAt ? new Date(item.observedAt).toISOString() : null;
+    const lastSeen = history.map((row) => iso(row.recordedAt)).filter((value): value is string => Boolean(value)).sort().at(-1) ?? observedAt;
     const runningSamples = history.filter((row) => serviceStatus(text(metricRecord(row).activeState, text(metricRecord(row).status))) === 'running').length;
-    return { name, status: serviceStatus(activeState), activeState, enabledState: item?.enabledState ?? 'unavailable', lastSeen, sampleCount: history.length, runningSamplePercent: history.length > 0 ? Math.round(runningSamples / history.length * 10000) / 100 : null, scope: name.startsWith('mydash-') || name === 'mydash-cloudflared' ? 'mydash' : 'pterodactyl-or-host' };
+    const sampleCount = history.length > 0 ? history.length : item ? 1 : 0;
+    const runningSamplePercent = history.length > 0 ? Math.round(runningSamples / history.length * 10000) / 100 : item ? currentStatus === 'running' ? 100 : 0 : null;
+    return { name, status: currentStatus, activeState, enabledState: item?.enabledState ?? 'unavailable', lastSeen, sampleCount, runningSamplePercent, scope: name.startsWith('mydash-') || name === 'mydash-cloudflared' ? 'mydash' : 'pterodactyl-or-host' };
   });
 }
 function healthFactors(system: ReturnType<typeof collectSystemMetrics>, rows: MetricRow[]) {
@@ -196,7 +201,10 @@ function networkDetails(system: ReturnType<typeof collectSystemMetrics>, rows: M
     const txBytes = finite(value.txBytes);
     return name && rxBytes !== null && txBytes !== null ? [{ name, rxBytes, txBytes, rxGiB: Math.round(rxBytes / 1073741824 * 100) / 100, txGiB: Math.round(txBytes / 1073741824 * 100) / 100 }] : [];
   }).sort((a, b) => b.rxBytes + b.txBytes - (a.rxBytes + a.txBytes));
-  return { status: rates.length > 0 ? 'available' : system.network.rateAvailable ? 'available' : 'unavailable', activeInterface: system.network.interface || 'unavailable', ipv4: system.network.ipv4 || null, ipv6: system.network.ipv6 || null, rxSpeed: system.network.rateAvailable ? system.network.rxSpeed : null, txSpeed: system.network.rateAvailable ? system.network.txSpeed : null, totalSpeed: system.network.rateAvailable ? system.network.rxSpeed + system.network.txSpeed : null, averageSpeed: rates.length > 0 ? rates.reduce((sum, value) => sum + value, 0) / rates.length / 1048576 : null, peakSpeed: rates.length > 0 ? Math.max(...rates) / 1048576 : null, rateUnit: 'MB/s', rateAvailable: system.network.rateAvailable || rates.length > 0, sampleCount: rates.length, dominantDirection: system.network.rxSpeed > system.network.txSpeed ? 'rx' : system.network.txSpeed > system.network.rxSpeed ? 'tx' : system.network.rateAvailable ? 'balanced' : 'unavailable', packetLoss: null, latencyMs: null, packetLossAvailable: false, latencyAvailable: false, interfaces, samples: valid.slice(-120) };
+  const rateAvailable = system.network.rateAvailable || rates.length > 0;
+  const rxSpeed = system.network.rateAvailable ? system.network.rxSpeed : rates.length > 0 ? rates.at(-1)! / 1048576 / 2 : null;
+  const txSpeed = system.network.rateAvailable ? system.network.txSpeed : rates.length > 0 ? rates.at(-1)! / 1048576 / 2 : null;
+  return { status: rateAvailable ? 'available' : 'unavailable', activeInterface: system.network.interface || 'unavailable', ipv4: system.network.ipv4 || null, ipv6: system.network.ipv6 || null, rxSpeed, txSpeed, totalSpeed: rxSpeed !== null && txSpeed !== null ? rxSpeed + txSpeed : null, averageSpeed: rates.length > 0 ? rates.reduce((sum, value) => sum + value, 0) / rates.length / 1048576 : null, peakSpeed: rates.length > 0 ? Math.max(...rates) / 1048576 : null, rateUnit: 'MB/s', rateAvailable, sampleCount: rates.length, dominantDirection: rxSpeed !== null && txSpeed !== null ? rxSpeed > txSpeed ? 'rx' : txSpeed > rxSpeed ? 'tx' : 'balanced' : 'unavailable', packetLoss: system.network.packetLossAvailable ? system.network.packetLossPercent : null, latencyMs: system.network.latencyAvailable ? system.network.latencyMs : null, packetLossAvailable: system.network.packetLossAvailable, latencyAvailable: system.network.latencyAvailable, interfaces, samples: valid.slice(-120) };
 }
 function availability(system: ReturnType<typeof collectSystemMetrics>, rows: MetricRow[], rangeMs: number) {
   const now = Date.now();
@@ -212,11 +220,17 @@ function availability(system: ReturnType<typeof collectSystemMetrics>, rows: Met
   const expectedBuckets = Math.max(1, Math.ceil(rangeMs / 60000));
   const observed = Math.min(expectedBuckets, observedBuckets.size);
   const missing = Math.max(0, expectedBuckets - observed);
+  const serviceNames = Array.from(new Set([...requiredServiceNames, ...system.serviceDetails.map((item) => item.name)]));
   const serviceHistory = serviceNames.map((name) => {
     const serviceRows = scopedRows.filter((row) => row.metricType === 'service' && text(metricRecord(row).serviceName) === name);
+    const current = system.serviceDetails.find((item) => item.name === name);
     const serviceBuckets = new Set(serviceRows.map((row) => bucket(row.recordedAt)).filter((value): value is string => Boolean(value)));
     const running = serviceRows.filter((row) => serviceStatus(text(metricRecord(row).activeState, text(metricRecord(row).status))) === 'running').length;
-    return { name, expectedBuckets, observedBuckets: serviceBuckets.size, coveragePercent: Math.round(Math.min(100, serviceBuckets.size / expectedBuckets * 10000)) / 100, runningPercent: serviceRows.length > 0 ? Math.round(running / serviceRows.length * 10000) / 100 : null, lastSeen: serviceRows.map((row) => iso(row.recordedAt)).filter((value): value is string => Boolean(value)).sort().at(-1) ?? null, status: serviceRows.length === 0 ? 'unavailable' : serviceBuckets.size / expectedBuckets >= 0.95 && running / serviceRows.length >= 0.95 ? 'available' : 'degraded' };
+    const observedCount = serviceBuckets.size > 0 ? serviceBuckets.size : current ? 1 : 0;
+    const runningPercent = serviceRows.length > 0 ? Math.round(running / serviceRows.length * 10000) / 100 : current ? serviceStatus(current.activeState) === 'running' ? 100 : 0 : null;
+    const lastSeen = serviceRows.map((row) => iso(row.recordedAt)).filter((value): value is string => Boolean(value)).sort().at(-1) ?? (current ? new Date(current.observedAt).toISOString() : null);
+    const status = observedCount === 0 ? 'unavailable' : observedCount / expectedBuckets >= 0.95 && runningPercent !== null && runningPercent >= 95 ? 'available' : 'degraded';
+    return { name, expectedBuckets, observedBuckets: observedCount, coveragePercent: Math.round(Math.min(100, observedCount / expectedBuckets * 10000)) / 100, runningPercent, lastSeen, status };
   });
   const uptimePoints = scopedRows.filter((row) => row.metricType === 'service' || row.metricType === 'cpu').map((row) => {
     const data = metricRecord(row);

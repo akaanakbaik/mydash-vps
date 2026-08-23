@@ -209,6 +209,11 @@ export function RealtimeChart({
             className={animate ? 'transition-all duration-500 ease-out' : ''}
           />
         ))}
+        {animate && paths.map((p, i) => {
+          const latest = p.pts[p.pts.length - 1];
+          if (!latest) return null;
+          return <circle key={`live-${i}`} cx={latest.x} cy={latest.y} r={4} fill={p.color} className="chart-live-node" />;
+        })}
         {}
         {hoveredX !== null && hoveredInfo && (
           <>

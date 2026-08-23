@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sendOk, sendCreated, createRequestContext, broadcastEvent } from '../../transport/http/response.js';
+import { collectSystemMetrics } from '../../infrastructure/systemMetrics/service.js';
 import { createUseCaseContext } from '../../application/usecases/base.js';
 type DI = { resolve: (key: string) => unknown };
 type UseCase<TIn, TOut> = { execute: (input: TIn, context: ReturnType<typeof createUseCaseContext>) => Promise<{ success: boolean; data: TOut | null; error: unknown }> };
@@ -83,18 +84,25 @@ function defaultBackup() {
     restores: [], timeline: [], activity: [], filterTypes: [],
   };
 }
+function dockerResponse() {
+  const docker = collectSystemMetrics().docker;
+  return {
+    containers: docker.containers.map((item) => ({ id: item.id, name: item.name, image: item.image, status: item.status === 'running' ? 'running' : item.status === 'paused' ? 'paused' : 'stopped', cpuPercent: item.cpuPercent, memoryPercent: item.memoryPercent, ports: item.ports, created: item.created, restartCount: item.restartCount })),
+    images: docker.images.map((item) => ({ id: item.id, repository: item.repository, tag: item.tag, size: item.size, created: item.created })),
+    volumes: docker.volumes.map((item) => ({ name: item.name, driver: item.driver, mountPoint: item.mountPoint, size: item.size ?? 0, status: item.status })),
+    networks: docker.networks.map((item) => ({ name: item.name, driver: item.driver, subnet: item.subnet, containers: item.containers })),
+    totalCpu: docker.totalCpu, totalMemory: docker.totalMemory, containerCount: docker.containerCount, runningCount: docker.runningCount, stoppedCount: docker.stoppedCount,
+    timeline: [],
+  };
+}
 export function createDockerRouter(_di?: DI): Router {
   const router = Router();
   router.get('/', (_req, res) => {
     const ctx = createRequestContext(_req);
-    sendOk(res, {
-      containers: [], images: [], volumes: [], networks: [],
-      totalCpu: 0, totalMemory: 0, containerCount: 0, runningCount: 0, stoppedCount: 0,
-      timeline: [],
-    }, ctx);
+    sendOk(res, dockerResponse(), ctx);
   });
   router.get('/containers', (_req, res) => {
-    sendOk(res, [], createRequestContext(_req));
+    sendOk(res, dockerResponse().containers, createRequestContext(_req));
   });
   router.post('/containers/:id/restart', (req, res) => {
     const ctx = createRequestContext(req);

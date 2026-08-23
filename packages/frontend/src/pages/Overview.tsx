@@ -116,7 +116,7 @@ export function OverviewPage() {
       {data.health.score >= 70 && data.health.score < 85 && <StatusBanner variant="warning" title="System health needs attention" description={`Health score is ${String(data.health.score)}/100. Some factors require review.`} className="mb-6" />}
       {data.health.score >= 85 && <StatusBanner variant="success" title="All systems operational" description={`Health score is ${String(data.health.score)}/100. Server is running normally.`} className="mb-6" />}
       <DashboardSection title="Summary" subtitle="System overview at a glance" className="mb-6">
-        <DashboardGrid cols={1} colsSm={2} colsLg={3} colsXl={5} gap="gap-3">
+        <DashboardGrid cols={1} colsSm={2} colsLg={3} colsXl={5} gap="gap-2 sm:gap-3">
           <SummaryCard label="Server Status" value={data.server.hostname} subtitle={`Up ${data.server.uptime}`} icon={<Server className="h-5 w-5" />} color="primary" onClick={() => { void navigate('/monitoring'); }} />
           <SummaryCard label="Health Score" value={finite(data.health.score)} subtitle={`Grade ${data.health.grade} · ${data.health.trend === 'up' ? 'Improving' : data.health.trend === 'down' ? 'Declining' : 'Stable'}`} icon={<HeartPulse className="h-5 w-5" />} color={data.health.score >= 80 ? 'success' : data.health.score >= 60 ? 'warning' : 'danger'} trend={data.health.trend} onClick={() => { void navigate('/health-score'); }} />
           <SummaryCard label="CPU Load" value={`${finite(cpuResource?.used).toFixed(1)}%`} subtitle={`${String(data.server.cpuCores)} cores`} icon={<Cpu className="h-5 w-5" />} color={finite(cpuResource?.used) > 80 ? 'danger' : finite(cpuResource?.used) > 60 ? 'warning' : 'success'} onClick={() => { void navigate('/monitoring'); }} />
@@ -125,7 +125,7 @@ export function OverviewPage() {
         </DashboardGrid>
       </DashboardSection>
       <DashboardSection title="Host specification" subtitle="Short, practical facts collected from the VPS" className="mb-6">
-        <DashboardGrid cols={1} colsLg={2} gap="gap-6">
+        <DashboardGrid cols={1} colsLg={2} gap="gap-4 sm:gap-6">
           <DashboardWidgetContainer title="System identity" subtitle="Detected from the host metrics agent">
             <div className="grid gap-1 sm:grid-cols-2">
               <SpecRow icon={<Server className="h-4 w-4" />} label="Hostname" value={safeText(data.server.hostname)} />
@@ -147,7 +147,7 @@ export function OverviewPage() {
         </DashboardGrid>
       </DashboardSection>
       <DashboardSection title="System" subtitle="Resource usage and health" className="mb-6">
-        <DashboardGrid cols={1} colsLg={3} gap="gap-6">
+        <DashboardGrid cols={1} colsLg={3} gap="gap-4 sm:gap-6">
           <DashboardWidgetContainer title="Resource Usage" subtitle="Current host metrics" className="lg:col-span-1">
             <div className="space-y-4">
               {resources.map((resource) => <ResourceBar key={resource.label} label={resource.label} used={resource.used} total={resource.total} unit={resource.unit} color={getResourceColor(resource.percent)} />)}
@@ -165,7 +165,7 @@ export function OverviewPage() {
       </DashboardSection>
       {historyVisible && <DashboardSection title="Live history" subtitle={`Database timeline · ${timeRange}`} className="mb-6"><DashboardWidgetContainer title="Resource trend" subtitle={timelineQuery.isFetching ? 'Updating from VPS...' : `${String(timeline.length)} real samples`}><RealtimeChart series={timelineSeries} height={250} yLabel="Percent" showGrid showAxis animate /></DashboardWidgetContainer></DashboardSection>}
       <DashboardSection title="Activity" subtitle="Recent events and actions">
-        <DashboardGrid cols={1} colsLg={3} gap="gap-6">
+        <DashboardGrid cols={1} colsLg={3} gap="gap-4 sm:gap-6">
           <DashboardWidgetContainer title="Recent Activity" subtitle="Latest system events"><RecentActivityPanel activities={data.recentActivity.slice(0, 6)} /></DashboardWidgetContainer>
           <DashboardWidgetContainer title="Active Alerts" subtitle={`${String(data.activeAlerts.length)} active`}><RecentAlertsPanel alerts={data.activeAlerts} /></DashboardWidgetContainer>
           <DashboardWidgetContainer title="Quick Actions" subtitle="Common tasks"><QuickActions actions={data.quickActions} /></DashboardWidgetContainer>

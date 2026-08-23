@@ -169,25 +169,38 @@ export function createMonitoringRouter(di?: DI): Router {
   });
   return router;
 }
+function formatRuntime(seconds: number | undefined): string {
+  if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds <= 0) return 'Not available';
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor(seconds % 86400 / 3600);
+  const minutes = Math.floor(seconds % 3600 / 60);
+  return days > 0 ? `${days}d ${hours}h ${minutes}m` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+function mapRuntimeServices(system: ReturnType<typeof collectSystemMetrics>) {
+  return system.serviceDetails.map((item) => {
+    const status = item.activeState === 'active' ? 'running' : item.activeState === 'failed' ? 'failed' : item.activeState === 'activating' || item.activeState === 'reloading' ? 'restarting' : item.activeState === 'inactive' || item.activeState === 'dead' || item.activeState === 'exited' ? 'stopped' : 'unavailable';
+    return { name: item.name, status, cpu: typeof item.cpuPercent === 'number' && Number.isFinite(item.cpuPercent) ? Number(item.cpuPercent.toFixed(2)) : null, memory: typeof item.memoryBytes === 'number' && Number.isFinite(item.memoryBytes) && item.memoryBytes > 0 ? Math.round(item.memoryBytes / 1048576) : null, uptime: formatRuntime(item.uptimeSeconds), port: item.ports?.[0] ?? null };
+  });
+}
+function mapDockerOverview(system: ReturnType<typeof collectSystemMetrics>) {
+  return { containerCount: system.docker.containerCount, running: system.docker.runningCount, stopped: system.docker.stoppedCount, cpuPercent: system.docker.totalCpu, memoryPercent: system.docker.totalMemory, restartCount: system.docker.containers.reduce((sum, item) => sum + item.restartCount, 0), health: system.docker.health === 'healthy' ? 'healthy' : system.docker.health === 'unhealthy' ? 'unhealthy' : 'degraded' as const };
+}
+function mapTunnelOverview(system: ReturnType<typeof collectSystemMetrics>) {
+  const tunnel = system.docker.containers.find((item) => item.name === 'mydash-cloudflared');
+  const connected = tunnel?.status === 'running';
+  return { provider: connected ? 'cloudflare' : '', status: connected ? 'connected' as const : 'disconnected' as const, domain: connected ? 'myvpsdash.akadev.me' : '', ssl: connected, latency: 0, uptime: formatRuntime(tunnel?.uptimeSeconds), reconnectCount: tunnel?.restartCount ?? 0 };
+}
 function defaultMonitoring(system = collectSystemMetrics(), timeline: TimelinePoint[] = []) {
   const now = new Date().toISOString();
   const currentPoint = { timestamp: now, cpu: system.cpuUsagePercent, memory: system.ramUsagePercent, disk: system.diskUsagePercent, network: system.network.rxSpeed + system.network.txSpeed };
-  const services = Object.entries(system.services).map(([name, state]) => ({
-    name,
-    status: state === 'active' ? 'running' : state === 'failed' ? 'failed' : 'stopped',
-    cpu: null,
-    memory: null,
-    uptime: 'Not available',
-    port: null,
-  }));
   return {
     cpu: { model: system.cpuModel, vendor: '', cores: system.cpuCores, threads: system.cpuCores, clockMin: system.cpuSpeed, clockMax: system.cpuSpeed, clockCurrent: system.cpuSpeed, loadAverage: system.loadAverage1m, usagePercent: system.cpuUsagePercent, temperature: null, perCore: [] },
     memory: { total: system.totalRamMB, used: system.usedRamMB, available: system.freeRamMB, cached: 0, buffered: 0, swapTotal: 0, swapUsed: 0, usagePercent: system.ramUsagePercent },
-    disks: [{ device: '/', mount: '/', filesystem: 'host', total: system.totalDiskMB, used: system.usedDiskMB, available: system.freeDiskMB, usagePercent: system.diskUsagePercent, inodeUsage: 0, readSpeed: 0, writeSpeed: 0 }],
-    network: { interface: system.network.interface, publicIpv4: '', interfaceIpv4: system.network.ipv4, publicIpv6: system.network.ipv6, rxBytes: system.network.rxBytes, txBytes: system.network.txBytes, rxSpeed: system.network.rxSpeed, txSpeed: system.network.txSpeed, packetLoss: 0, latency: 0, connections: 0 },
-    docker: { containerCount: 0, running: 0, stopped: 0, cpuPercent: 0, memoryPercent: 0, restartCount: 0, health: 'unavailable' as const },
-    tunnel: { provider: '', status: 'disconnected' as const, domain: '', ssl: false, latency: 0, reconnectCount: 0, uptime: '0h' },
-    services, timeline: timeline.length > 0 ? timeline : [currentPoint],
+    disks: [{ device: '/', mount: '/', filesystem: system.filesystem, total: system.totalDiskMB, used: system.usedDiskMB, available: system.freeDiskMB, usagePercent: system.diskUsagePercent, inodeUsage: system.inodeUsageAvailable ? system.inodeUsagePercent : 0, readSpeed: system.diskIoAvailable ? system.diskReadBps : 0, writeSpeed: system.diskIoAvailable ? system.diskWriteBps : 0 }],
+    network: { interface: system.network.interface, publicIpv4: system.network.ipv4, interfaceIpv4: system.network.ipv4, publicIpv6: system.network.ipv6, rxBytes: system.network.rxBytes, txBytes: system.network.txBytes, rxSpeed: system.network.rxSpeed, txSpeed: system.network.txSpeed, packetLoss: system.network.packetLossAvailable ? system.network.packetLossPercent : 0, latency: system.network.latencyAvailable ? system.network.latencyMs : 0, connections: 0 },
+    docker: mapDockerOverview(system),
+    tunnel: mapTunnelOverview(system),
+    services: mapRuntimeServices(system), timeline: timeline.length > 0 ? timeline : [currentPoint],
     collection: { status: 'success' as const, lastUpdated: now, errorCount: 0, errors: [], summary: 'Live system metrics collected by backend', nextCollection: new Date(Date.now() + 60000).toISOString() },
     categories: [],
   };

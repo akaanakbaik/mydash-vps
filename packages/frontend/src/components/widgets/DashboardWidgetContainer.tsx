@@ -44,7 +44,7 @@ export function DashboardWidgetContainer({
       aria-busy={Boolean(isLoading || isRefreshing)}
     >
       {}
-      <div className="flex items-center justify-between border-b border-[hsl(var(--color-border))]/60 bg-[hsl(var(--color-surface-raised)/0.3)] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-[hsl(var(--color-border))]/60 bg-[hsl(var(--color-surface-raised)/0.3)] px-4 py-3 sm:px-5 sm:py-4">
         <div className="flex items-center gap-2.5">
           <div>
             <h3 className="text-sm font-semibold text-[hsl(var(--color-text))]">{title}</h3>
@@ -69,7 +69,7 @@ export function DashboardWidgetContainer({
         </div>
       </div>
       {}
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {showSkeleton && (loadingState ?? <WidgetSkeleton />)}
         {isError && (errorState ?? (
           <div className="flex min-h-24 items-center justify-center text-sm text-[hsl(var(--color-danger))]">
@@ -111,7 +111,7 @@ export function TimeRangeSelector({
           key={opt.value}
           onClick={() => { onChange(opt.value); }}
           className={cn(
-            'min-h-9 rounded-md px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))]',
+            'min-h-8 rounded-md px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] sm:min-h-9 sm:px-2.5',
             value === opt.value
               ? 'bg-[hsl(var(--color-primary))] text-white'
               : 'text-[hsl(var(--color-muted))] hover:text-[hsl(var(--color-text))]',
@@ -148,16 +148,16 @@ export function SummaryCard({ label, value, subtitle, icon, trend, color = 'prim
       type="button"
       onClick={onClick}
       className={cn(
-        'skeuo-surface interactive-surface flex items-start gap-4 rounded-2xl p-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] w-full',
+        'skeuo-surface interactive-surface flex w-full items-start gap-3 rounded-2xl p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-primary))] sm:gap-4 sm:p-5',
       )}
       aria-label={`${label}: ${String(value)}`}
     >
-      <div className={cn('skeuo-inset flex h-12 w-12 shrink-0 items-center justify-center rounded-xl', color === 'primary' ? 'text-[hsl(var(--color-primary))]' : color === 'success' ? 'text-[hsl(var(--color-success))]' : color === 'warning' ? 'text-[hsl(var(--color-warning))]' : color === 'danger' ? 'text-[hsl(var(--color-danger))]' : 'text-[hsl(var(--color-muted))]')}>
+      <div className={cn('skeuo-inset flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12', color === 'primary' ? 'text-[hsl(var(--color-primary))]' : color === 'success' ? 'text-[hsl(var(--color-success))]' : color === 'warning' ? 'text-[hsl(var(--color-warning))]' : color === 'danger' ? 'text-[hsl(var(--color-danger))]' : 'text-[hsl(var(--color-muted))]')}>
         <div className={cn(accentColor)}>{icon}</div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={cn('text-2xl font-bold', accentColor)}>{value}</span>
+          <span className={cn('text-xl font-bold sm:text-2xl', accentColor)}>{value}</span>
           {trend && (
             <span className={cn(
               'text-xs font-medium',

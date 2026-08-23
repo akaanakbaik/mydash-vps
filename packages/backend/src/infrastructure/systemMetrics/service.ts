@@ -29,6 +29,11 @@ export interface SystemData {
   usedDiskMB: number;
   freeDiskMB: number;
   diskUsagePercent: number;
+  diskReadBps: number;
+  diskWriteBps: number;
+  diskIoAvailable: boolean;
+  inodeUsagePercent: number;
+  inodeUsageAvailable: boolean;
   bootTime: string;
   agentVersion: string;
   network: {
@@ -40,11 +45,55 @@ export interface SystemData {
     rxSpeed: number;
     txSpeed: number;
     rateAvailable: boolean;
+    packetLossPercent: number;
+    latencyMs: number;
+    packetLossAvailable: boolean;
+    latencyAvailable: boolean;
   };
   networkInterfaces: { name: string; rxBytes: number; txBytes: number }[];
   processes: number;
   services: Record<string, string>;
-  serviceDetails: { name: string; activeState: string; enabledState: string; observedAt: number }[];
+  serviceDetails: { name: string; activeState: string; enabledState: string; observedAt: number; cpuPercent?: number; memoryBytes?: number; uptimeSeconds?: number; ports?: number[] }[];
+  docker: { containers: { id: string; name: string; image: string; status: string; cpuPercent: number; memoryPercent: number; memoryBytes: number; ports: string; restartCount: number; created: string; startedAt: string; healthStatus: string; uptimeSeconds?: number }[]; images: { id: string; repository: string; tag: string; size: number; created: string }[]; volumes: { name: string; driver: string; mountPoint: string; size: number | null; status: string }[]; networks: { name: string; driver: string; subnet: string; containers: number }[]; totalCpu: number; totalMemory: number; containerCount: number; runningCount: number; stoppedCount: number; health: 'healthy' | 'degraded' | 'unhealthy' | 'unavailable' };
+}
+function emptyDockerSnapshot(): SystemData['docker'] {
+  return { containers: [], images: [], volumes: [], networks: [], totalCpu: 0, totalMemory: 0, containerCount: 0, runningCount: 0, stoppedCount: 0, health: 'unavailable' };
+}
+function parseDockerSnapshot(value: unknown): SystemData['docker'] {
+  const raw = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+  const numberOrNull = (input: unknown): number | null => typeof input === 'number' && Number.isFinite(input) ? input : null;
+  const stringOrEmpty = (input: unknown): string => typeof input === 'string' ? input : '';
+  const containers = Array.isArray(raw.containers) ? raw.containers.flatMap((input) => {
+    if (!input || typeof input !== 'object') return [];
+    const item = input as Record<string, unknown>;
+    const id = stringOrEmpty(item.id);
+    const name = stringOrEmpty(item.name);
+    if (!id || !name) return [];
+    return [{ id, name, image: stringOrEmpty(item.image), status: stringOrEmpty(item.status) || 'unknown', cpuPercent: numberOrNull(item.cpuPercent) ?? 0, memoryPercent: numberOrNull(item.memoryPercent) ?? 0, memoryBytes: numberOrNull(item.memoryBytes) ?? 0, ports: stringOrEmpty(item.ports), restartCount: numberOrNull(item.restartCount) ?? 0, created: stringOrEmpty(item.created), startedAt: stringOrEmpty(item.startedAt), healthStatus: stringOrEmpty(item.healthStatus) || 'unknown' }];
+  }).slice(0, 128) : [];
+  const images = Array.isArray(raw.images) ? raw.images.flatMap((input) => {
+    if (!input || typeof input !== 'object') return [];
+    const item = input as Record<string, unknown>;
+    const id = stringOrEmpty(item.id);
+    if (!id) return [];
+    return [{ id, repository: stringOrEmpty(item.repository), tag: stringOrEmpty(item.tag), size: numberOrNull(item.size) ?? 0, created: stringOrEmpty(item.created) }];
+  }).slice(0, 128) : [];
+  const volumes = Array.isArray(raw.volumes) ? raw.volumes.flatMap((input) => {
+    if (!input || typeof input !== 'object') return [];
+    const item = input as Record<string, unknown>;
+    const name = stringOrEmpty(item.name);
+    if (!name) return [];
+    return [{ name, driver: stringOrEmpty(item.driver), mountPoint: stringOrEmpty(item.mountPoint), size: numberOrNull(item.size), status: stringOrEmpty(item.status) || 'unknown' }];
+  }).slice(0, 128) : [];
+  const networks = Array.isArray(raw.networks) ? raw.networks.flatMap((input) => {
+    if (!input || typeof input !== 'object') return [];
+    const item = input as Record<string, unknown>;
+    const name = stringOrEmpty(item.name);
+    if (!name) return [];
+    return [{ name, driver: stringOrEmpty(item.driver), subnet: stringOrEmpty(item.subnet), containers: numberOrNull(item.containers) ?? 0 }];
+  }).slice(0, 128) : [];
+  const health = raw.health === 'healthy' || raw.health === 'degraded' || raw.health === 'unhealthy' ? raw.health : containers.length > 0 ? containers.some((item) => item.healthStatus === 'unhealthy') ? 'unhealthy' : containers.some((item) => item.healthStatus === 'starting' || item.healthStatus === 'unknown') ? 'degraded' : 'healthy' : 'unavailable';
+  return { containers, images, volumes, networks, totalCpu: numberOrNull(raw.totalCpu) ?? containers.reduce((sum, item) => sum + item.cpuPercent, 0), totalMemory: numberOrNull(raw.totalMemory) ?? 0, containerCount: numberOrNull(raw.containerCount) ?? containers.length, runningCount: numberOrNull(raw.runningCount) ?? containers.filter((item) => item.status === 'running').length, stoppedCount: numberOrNull(raw.stoppedCount) ?? containers.filter((item) => item.status !== 'running').length, health };
 }
 function readHostSnapshot(): SystemData | null {
   try {
@@ -71,7 +120,7 @@ function readHostSnapshot(): SystemData | null {
       const entry = item as Record<string, unknown>;
       const name = typeof entry.name === 'string' ? entry.name : '';
       if (!name) return [];
-      return [{ name, activeState: typeof entry.activeState === 'string' ? entry.activeState : 'unknown', enabledState: typeof entry.enabledState === 'string' ? entry.enabledState : 'unknown', observedAt: numberOrZero(entry.observedAt) }];
+      return [{ name, activeState: typeof entry.activeState === 'string' ? entry.activeState : 'unknown', enabledState: typeof entry.enabledState === 'string' ? entry.enabledState : 'unknown', observedAt: numberOrZero(entry.observedAt), cpuPercent: numberOrZero(entry.cpuPercent), memoryBytes: numberOrZero(entry.memoryBytes), uptimeSeconds: numberOrZero(entry.uptimeSeconds), ports: Array.isArray(entry.ports) ? entry.ports.filter((port): port is number => typeof port === 'number' && Number.isFinite(port)) : [] }];
     }).slice(0, 32) : [];
     const textOrEmpty = (value: unknown) => typeof value === 'string' ? value : '';
     return {
@@ -102,6 +151,11 @@ function readHostSnapshot(): SystemData | null {
       usedDiskMB: numberOrZero(raw.usedDiskMB),
       freeDiskMB: numberOrZero(raw.freeDiskMB),
       diskUsagePercent: numberOrZero(raw.diskUsagePercent),
+      diskReadBps: numberOrZero(raw.diskReadBps),
+      diskWriteBps: numberOrZero(raw.diskWriteBps),
+      diskIoAvailable: raw.diskIoAvailable === true,
+      inodeUsagePercent: numberOrZero(raw.inodeUsagePercent),
+      inodeUsageAvailable: raw.inodeUsageAvailable === true,
       bootTime: textOrEmpty(raw.bootTime),
       agentVersion: textOrEmpty(raw.agentVersion) || 'host-agent',
       network: {
@@ -113,11 +167,16 @@ function readHostSnapshot(): SystemData | null {
         rxSpeed: numberOrZero(networkRaw.rxSpeed),
         txSpeed: numberOrZero(networkRaw.txSpeed),
         rateAvailable: networkRaw.rateAvailable === true,
+        packetLossPercent: numberOrZero(networkRaw.packetLossPercent),
+        latencyMs: numberOrZero(networkRaw.latencyMs),
+        packetLossAvailable: networkRaw.packetLossAvailable === true,
+        latencyAvailable: networkRaw.latencyAvailable === true,
       },
       networkInterfaces,
       processes: numberOrZero(raw.processes),
       services: raw.services && typeof raw.services === 'object' ? Object.fromEntries(Object.entries(raw.services as Record<string, unknown>).filter(([, value]) => typeof value === 'string')) as Record<string, string> : {},
       serviceDetails,
+      docker: parseDockerSnapshot(raw.docker),
     };
   } catch {
     return null;
@@ -198,10 +257,10 @@ function getCpuModelFromProc(): string {
   }
   return 'Unknown CPU';
 }
-function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean } {
+function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean; packetLossPercent: number; latencyMs: number; packetLossAvailable: boolean; latencyAvailable: boolean } {
   try {
     const nets = networkInterfaces();
-    const results: { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean } = { interface: '', ipv4: '', ipv6: '', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false };
+    const results: { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean; packetLossPercent: number; latencyMs: number; packetLossAvailable: boolean; latencyAvailable: boolean } = { interface: '', ipv4: '', ipv6: '', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false, packetLossPercent: 0, latencyMs: 0, packetLossAvailable: false, latencyAvailable: false };
     let bestCandidate = { name: '', ipv4: '', ipv6: '', score: -1 };
     for (const [name, netList] of Object.entries(nets)) {
       if (!netList) continue;
@@ -245,7 +304,7 @@ function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBy
     }
     return results;
   } catch {
-    return { interface: 'eth0', ipv4: '127.0.0.1', ipv6: '::1', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false };
+    return { interface: 'eth0', ipv4: '127.0.0.1', ipv6: '::1', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false, packetLossPercent: 0, latencyMs: 0, packetLossAvailable: false, latencyAvailable: false };
   }
 }
 let prevNetReading = { rxBytes: 0, txBytes: 0, timestamp: 0 };
@@ -310,6 +369,11 @@ export function collectSystemMetrics(): SystemData {
     usedDiskMB: disk.usedMB,
     freeDiskMB: disk.freeMB,
     diskUsagePercent: disk.usagePercent,
+    diskReadBps: 0,
+    diskWriteBps: 0,
+    diskIoAvailable: false,
+    inodeUsagePercent: 0,
+    inodeUsageAvailable: false,
     bootTime,
     agentVersion: '1.0.0',
     network: net,
@@ -317,5 +381,6 @@ export function collectSystemMetrics(): SystemData {
     processes: procCount,
     services: {},
     serviceDetails: [],
+    docker: emptyDockerSnapshot(),
   };
 }
