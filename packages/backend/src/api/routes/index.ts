@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { createAuthRouter, createRolesRouter } from './auth.js';
 import { createDashboardRouter, createMonitoringRouter, createAnalyticsRouter, createHealthRouter } from './monitoring.js';
+import { createLogsRouter, createObservabilityRouter } from './observability.js';
 import { createServersRouter, createBackupRouter, createDockerRouter, createTunnelRouter, createGitHubRouter, createPluginRouter } from './resources.js';
 import { createNotificationRouter, createAutomationRouter, createSecurityRouter, createAuditRouter, createSettingsRouter, createProfileRouter, createSessionRouter } from './management.js';
 import { authenticateMiddleware, requirePermission } from '../middleware/auth.js';
@@ -14,6 +15,8 @@ export function createApiRouter(logger: Logger, jwtSecret: string, registry?: Se
   api.use('/dashboard', auth, createDashboardRouter(di));
   api.use('/servers', auth, createServersRouter(di));
   api.use('/monitoring', auth, createMonitoringRouter(di));
+  api.use('/observability', auth, createObservabilityRouter(di));
+  api.use('/logs', auth, createLogsRouter(di));
   api.use('/analytics', auth, createAnalyticsRouter(di));
   api.use('/health', auth, createHealthRouter(di));
   api.use('/notifications', auth, createNotificationRouter(di));

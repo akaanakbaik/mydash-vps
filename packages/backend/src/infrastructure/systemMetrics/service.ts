@@ -1,12 +1,17 @@
 import { hostname, type, release, platform, uptime, cpus, totalmem, freemem, loadavg, networkInterfaces } from 'os';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 export interface SystemData {
   hostname: string;
   os: string;
   platform: string;
   release: string;
+  architecture: string;
+  virtualization: string;
+  filesystem: string;
   uptimeSeconds: number;
   uptimeFormatted: string;
+  diskTopDirectories: { path: string; bytes: number }[];
   cpuModel: string;
   cpuCores: number;
   cpuSpeed: number;
@@ -18,6 +23,8 @@ export interface SystemData {
   usedRamMB: number;
   freeRamMB: number;
   ramUsagePercent: number;
+  swapTotalMB: number;
+  swapUsedMB: number;
   totalDiskMB: number;
   usedDiskMB: number;
   freeDiskMB: number;
@@ -32,8 +39,89 @@ export interface SystemData {
     txBytes: number;
     rxSpeed: number;
     txSpeed: number;
+    rateAvailable: boolean;
   };
+  networkInterfaces: { name: string; rxBytes: number; txBytes: number }[];
   processes: number;
+  services: Record<string, string>;
+  serviceDetails: { name: string; activeState: string; enabledState: string; observedAt: number }[];
+}
+function readHostSnapshot(): SystemData | null {
+  try {
+    const raw = JSON.parse(readFileSync('/host-run/mydash-host-metrics.json', 'utf-8')) as Record<string, unknown>;
+    const updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : 0;
+    if (!Number.isFinite(updatedAt) || Date.now() / 1000 - updatedAt > 180) return null;
+    const networkRaw = raw.network && typeof raw.network === 'object' ? raw.network as Record<string, unknown> : {};
+    const numberOrZero = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    const diskTopDirectories = Array.isArray(raw.diskTopDirectories) ? raw.diskTopDirectories.flatMap((item) => {
+      if (!item || typeof item !== 'object') return [];
+      const entry = item as Record<string, unknown>;
+      const path = typeof entry.path === 'string' ? entry.path : '';
+      const bytes = numberOrZero(entry.bytes);
+      return path.startsWith('/') && bytes >= 0 ? [{ path, bytes }] : [];
+    }).slice(0, 12) : [];
+    const networkInterfaces = Array.isArray(raw.networkInterfaces) ? raw.networkInterfaces.flatMap((item) => {
+      if (!item || typeof item !== 'object') return [];
+      const entry = item as Record<string, unknown>;
+      const name = typeof entry.name === 'string' ? entry.name : '';
+      return name ? [{ name, rxBytes: numberOrZero(entry.rxBytes), txBytes: numberOrZero(entry.txBytes) }] : [];
+    }).slice(0, 32) : [];
+    const serviceDetails = Array.isArray(raw.serviceDetails) ? raw.serviceDetails.flatMap((item) => {
+      if (!item || typeof item !== 'object') return [];
+      const entry = item as Record<string, unknown>;
+      const name = typeof entry.name === 'string' ? entry.name : '';
+      if (!name) return [];
+      return [{ name, activeState: typeof entry.activeState === 'string' ? entry.activeState : 'unknown', enabledState: typeof entry.enabledState === 'string' ? entry.enabledState : 'unknown', observedAt: numberOrZero(entry.observedAt) }];
+    }).slice(0, 32) : [];
+    const textOrEmpty = (value: unknown) => typeof value === 'string' ? value : '';
+    return {
+      hostname: textOrEmpty(raw.hostname) || hostname(),
+      os: textOrEmpty(raw.os) || 'Ubuntu',
+      platform: textOrEmpty(raw.platform) || 'linux',
+      release: textOrEmpty(raw.release) || release(),
+      architecture: textOrEmpty(raw.architecture) || process.arch,
+      virtualization: textOrEmpty(raw.virtualization) || 'unknown',
+      filesystem: textOrEmpty(raw.filesystem) || 'unknown',
+      uptimeSeconds: numberOrZero(raw.uptimeSeconds),
+      uptimeFormatted: textOrEmpty(raw.uptimeFormatted) || 'Unavailable',
+      diskTopDirectories,
+      cpuModel: textOrEmpty(raw.cpuModel) || 'Unavailable',
+      cpuCores: numberOrZero(raw.cpuCores),
+      cpuSpeed: numberOrZero(raw.cpuSpeed),
+      cpuUsagePercent: numberOrZero(raw.cpuUsagePercent),
+      loadAverage1m: numberOrZero(raw.loadAverage1m),
+      loadAverage5m: numberOrZero(raw.loadAverage5m),
+      loadAverage15m: numberOrZero(raw.loadAverage15m),
+      totalRamMB: numberOrZero(raw.totalRamMB),
+      usedRamMB: numberOrZero(raw.usedRamMB),
+      freeRamMB: numberOrZero(raw.freeRamMB),
+      ramUsagePercent: numberOrZero(raw.ramUsagePercent),
+      swapTotalMB: numberOrZero(raw.swapTotalMB),
+      swapUsedMB: numberOrZero(raw.swapUsedMB),
+      totalDiskMB: numberOrZero(raw.totalDiskMB),
+      usedDiskMB: numberOrZero(raw.usedDiskMB),
+      freeDiskMB: numberOrZero(raw.freeDiskMB),
+      diskUsagePercent: numberOrZero(raw.diskUsagePercent),
+      bootTime: textOrEmpty(raw.bootTime),
+      agentVersion: textOrEmpty(raw.agentVersion) || 'host-agent',
+      network: {
+        interface: textOrEmpty(networkRaw.interface),
+        ipv4: textOrEmpty(networkRaw.ipv4),
+        ipv6: textOrEmpty(networkRaw.ipv6),
+        rxBytes: numberOrZero(networkRaw.rxBytes),
+        txBytes: numberOrZero(networkRaw.txBytes),
+        rxSpeed: numberOrZero(networkRaw.rxSpeed),
+        txSpeed: numberOrZero(networkRaw.txSpeed),
+        rateAvailable: networkRaw.rateAvailable === true,
+      },
+      networkInterfaces,
+      processes: numberOrZero(raw.processes),
+      services: raw.services && typeof raw.services === 'object' ? Object.fromEntries(Object.entries(raw.services as Record<string, unknown>).filter(([, value]) => typeof value === 'string')) as Record<string, string> : {},
+      serviceDetails,
+    };
+  } catch {
+    return null;
+  }
 }
 function bytesToMB(bytes: number): number {
   return Math.round(bytes / (1024 * 1024));
@@ -110,10 +198,10 @@ function getCpuModelFromProc(): string {
   }
   return 'Unknown CPU';
 }
-function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number } {
+function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean } {
   try {
     const nets = networkInterfaces();
-    const results: { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number } = { interface: '', ipv4: '', ipv6: '', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0 };
+    const results: { interface: string; ipv4: string; ipv6: string; rxBytes: number; txBytes: number; rxSpeed: number; txSpeed: number; rateAvailable: boolean } = { interface: '', ipv4: '', ipv6: '', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false };
     let bestCandidate = { name: '', ipv4: '', ipv6: '', score: -1 };
     for (const [name, netList] of Object.entries(nets)) {
       if (!netList) continue;
@@ -138,6 +226,7 @@ function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBy
     const speed = computeNetworkSpeed(results);
     results.rxSpeed = speed.rxSpeed;
     results.txSpeed = speed.txSpeed;
+    results.rateAvailable = speed.rateAvailable;
     try {
       const netDev = execSync('cat /proc/net/dev | tail -n +3', { encoding: 'utf-8', timeout: 2000 });
       const lines = netDev.trim().split('\n');
@@ -156,27 +245,30 @@ function getNetworkInfo(): { interface: string; ipv4: string; ipv6: string; rxBy
     }
     return results;
   } catch {
-    return { interface: 'eth0', ipv4: '127.0.0.1', ipv6: '::1', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0 };
+    return { interface: 'eth0', ipv4: '127.0.0.1', ipv6: '::1', rxBytes: 0, txBytes: 0, rxSpeed: 0, txSpeed: 0, rateAvailable: false };
   }
 }
 let prevNetReading = { rxBytes: 0, txBytes: 0, timestamp: 0 };
-function computeNetworkSpeed(current: { rxBytes: number; txBytes: number }): { rxSpeed: number; txSpeed: number } {
+function computeNetworkSpeed(current: { rxBytes: number; txBytes: number }): { rxSpeed: number; txSpeed: number; rateAvailable: boolean } {
   const now = Date.now();
   if (prevNetReading.timestamp === 0) {
     prevNetReading = { rxBytes: current.rxBytes, txBytes: current.txBytes, timestamp: now };
-    return { rxSpeed: 0, txSpeed: 0 };
+    return { rxSpeed: 0, txSpeed: 0, rateAvailable: false };
   }
   const dtSec = (now - prevNetReading.timestamp) / 1000;
-  if (dtSec <= 0) return { rxSpeed: 0, txSpeed: 0 };
+  if (dtSec <= 0) return { rxSpeed: 0, txSpeed: 0, rateAvailable: false };
   const dRx = current.rxBytes - prevNetReading.rxBytes;
   const dTx = current.txBytes - prevNetReading.txBytes;
   prevNetReading = { rxBytes: current.rxBytes, txBytes: current.txBytes, timestamp: now };
   return {
     rxSpeed: Math.max(0, Math.round((dRx / (1024 * 1024)) / dtSec * 100) / 100),
     txSpeed: Math.max(0, Math.round((dTx / (1024 * 1024)) / dtSec * 100) / 100),
+    rateAvailable: true,
   };
 }
 export function collectSystemMetrics(): SystemData {
+  const hostSnapshot = readHostSnapshot();
+  if (hostSnapshot) return hostSnapshot;
   const cpusList = cpus();
   const cpu = cpusList.length > 0 ? cpusList[0] : null;
   const totalMem = totalmem();
@@ -195,8 +287,12 @@ export function collectSystemMetrics(): SystemData {
     os: `${type()} ${release()}`,
     platform: platform(),
     release: release(),
+    architecture: process.arch,
+    virtualization: 'unknown',
+    filesystem: 'unknown',
     uptimeSeconds: seconds,
     uptimeFormatted: formatUptime(seconds),
+    diskTopDirectories: [],
     cpuModel: cpu ? cpu.model.trim() : getCpuModelFromProc(),
     cpuCores: cpusList.length,
     cpuSpeed: cpu && cpu.speed > 0 ? cpu.speed : getCpuSpeedFromProc(),
@@ -208,6 +304,8 @@ export function collectSystemMetrics(): SystemData {
     usedRamMB: usedMB,
     freeRamMB: bytesToMB(freeMem),
     ramUsagePercent: totalMB > 0 ? Math.round((usedMB / totalMB) * 100) : 0,
+    swapTotalMB: 0,
+    swapUsedMB: 0,
     totalDiskMB: disk.totalMB,
     usedDiskMB: disk.usedMB,
     freeDiskMB: disk.freeMB,
@@ -215,6 +313,9 @@ export function collectSystemMetrics(): SystemData {
     bootTime,
     agentVersion: '1.0.0',
     network: net,
+    networkInterfaces: [],
     processes: procCount,
+    services: {},
+    serviceDetails: [],
   };
 }

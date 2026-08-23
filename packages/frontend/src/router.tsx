@@ -6,6 +6,7 @@ import { SkeletonBlock } from './components/shared/Skeleton.js';
 import { tokenStorage } from './utils/tokenStorage.js';
 const OverviewPage = lazy(() => import('./pages/Overview.js').then((m) => ({ default: m.OverviewPage })));
 const MonitoringPage = lazy(() => import('./pages/Monitoring.js').then((m) => ({ default: m.MonitoringPage })));
+const ObservabilityPage = lazy(() => import('./pages/Observability.js').then((m) => ({ default: m.ObservabilityPage })));
 const AnalyticsPage = lazy(() => import('./pages/Analytics.js').then((m) => ({ default: m.AnalyticsPage })));
 const HealthScorePage = lazy(() => import('./pages/HealthScore.js').then((m) => ({ default: m.HealthScorePage })));
 const NotificationPage = lazy(() => import('./pages/Notification.js').then((m) => ({ default: m.NotificationPage })));
@@ -76,8 +77,9 @@ export const router = createBrowserRouter([
       { index: true, element: <Suspended><OverviewPage /></Suspended> },
       { path: 'servers', element: <Suspended><ServersPage /></Suspended> },
       { path: 'monitoring', element: <Suspended><MonitoringPage /></Suspended> },
+      { path: 'observability', element: <Suspended><ObservabilityPage /></Suspended> },
       { path: 'analytics', element: <Suspended><AnalyticsPage /></Suspended> },
-      { path: 'health', element: <Suspended><HealthScorePage /></Suspended> },
+      { path: 'health-score', element: <Suspended><HealthScorePage /></Suspended> },
       { path: 'notifications', element: <Suspended><NotificationPage /></Suspended> },
       { path: 'automation', element: <Suspended><AutomationPage /></Suspended> },
       { path: 'backup', element: <Suspended><BackupPage /></Suspended> },

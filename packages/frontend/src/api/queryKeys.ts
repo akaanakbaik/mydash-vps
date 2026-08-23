@@ -13,9 +13,13 @@ export const queryKeys = {
     metrics: (params?: Record<string, unknown>) => ['monitoring', 'metrics', params] as const,
     timeline: (params?: Record<string, unknown>) => ['monitoring', 'timeline', params] as const,
   },
+  observability: {
+    all: ['observability'] as const,
+    overview: (range: string) => ['observability', 'overview', range] as const,
+  },
   analytics: {
     all: ['analytics'] as const,
-    summary: () => ['analytics', 'summary'] as const,
+    summary: (params?: Record<string, unknown>) => ['analytics', 'summary', params] as const,
     trends: (params?: Record<string, unknown>) => ['analytics', 'trends', params] as const,
     anomalies: () => ['analytics', 'anomalies'] as const,
   },
