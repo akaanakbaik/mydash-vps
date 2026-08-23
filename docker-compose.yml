@@ -63,7 +63,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     volumes:
-      - /run/mydash-host-metrics.json:/host-run/mydash-host-metrics.json:ro
+      - /run/mydash-host-metrics:/host-run/mydash-host-metrics:ro
     depends_on:
       postgres:
         condition: service_healthy

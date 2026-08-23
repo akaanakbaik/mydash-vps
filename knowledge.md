@@ -6,7 +6,7 @@ MyDash adalah control plane observability untuk satu atau lebih VPS. Sistem diba
 
 ## Alur data monitoring
 
-Host agent berjalan sebagai systemd oneshot yang dipanggil timer setiap 60 detik. Agent membaca procfs, sysfs, `/etc/os-release`, filesystem statistics, interface counters, uptime, dan status unit systemd. Snapshot ditulis ke file sementara pada filesystem yang sama lalu dipindahkan dengan operasi atomik ke `/run/mydash-host-metrics.json`.
+Host agent berjalan sebagai systemd oneshot yang dipanggil timer setiap 60 detik. Agent membaca procfs, sysfs, `/etc/os-release`, filesystem statistics, interface counters, uptime, dan status unit systemd. Snapshot ditulis ke file sementara pada dedicated directory yang sama lalu dipindahkan dengan operasi atomik ke `/run/mydash-host-metrics/metrics.json`; backend hanya membaca directory tersebut melalui bind mount read-only.
 
 Backend membaca snapshot read-only. Collector memvalidasi field numerik dengan finite guard, menolak nilai non-finite, mengubah counter interface menjadi delta per second, lalu menyimpan metric per server dan workspace. Query historis memakai batas waktu eksplisit, sort timestamp ascending, dan range selector yang dibatasi 1 jam sampai 30 hari. Tidak ada random generator, fixture aktif, atau fallback angka nol untuk field yang tidak dapat dibuktikan.
 
@@ -58,4 +58,4 @@ Perubahan harus melewati shared build, backend typecheck, frontend typecheck/bui
 
 ## Troubleshooting
 
-Jika host metrics stale, periksa status timer, timestamp `/run/mydash-host-metrics.json`, permission file, dan bind mount backend. Jika dashboard menunjukkan `Unavailable`, periksa apakah data memang tidak dikumpulkan oleh host agent; jangan mengganti nilai dengan zero. Jika WebSocket reconnect berulang, periksa token, endpoint `/ws`, tunnel, dan browser network state. Jika installer menolak port, gunakan `--port` lain atau periksa listener existing sebelum melanjutkan.
+Jika host metrics stale, periksa status timer, timestamp `/run/mydash-host-metrics/metrics.json`, permission directory, dan bind mount directory backend. Jika dashboard menunjukkan `Unavailable`, periksa apakah data memang tidak dikumpulkan oleh host agent; jangan mengganti nilai dengan zero. Jika WebSocket reconnect berulang, periksa token, endpoint `/ws`, tunnel, dan browser network state. Jika installer menolak port, gunakan `--port` lain atau periksa listener existing sebelum melanjutkan.

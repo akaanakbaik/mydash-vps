@@ -22,7 +22,7 @@ Sistem notifikasi mendukung unread activity yang tersimpan lokal secara bounded,
 
 ## Data host dan batasan keamanan
 
-Host agent systemd mengumpulkan hostname, OS, distro, kernel, arsitektur, virtualisasi, filesystem, CPU, RAM, swap, disk, interface network, throughput berbasis delta counter, uptime, serta status service. Snapshot ditulis atomik ke `/run/mydash-host-metrics.json` dan dibaca backend melalui bind mount read-only.
+Host agent systemd mengumpulkan hostname, OS, distro, kernel, arsitektur, virtualisasi, filesystem, CPU, RAM, swap, disk, interface network, throughput berbasis delta counter, uptime, serta status service. Snapshot ditulis atomik ke `/run/mydash-host-metrics/metrics.json` dan dibaca backend melalui dedicated directory bind mount read-only.
 
 Backend tidak memerlukan Docker socket dan tidak memasang root filesystem host. Karena batasan tersebut, detail per-container seperti CPU, RAM, port, dan uptime container dapat berstatus `Unavailable`. Hal ini disengaja untuk menjaga security boundary dan mencegah dashboard menampilkan data yang tidak benar.
 

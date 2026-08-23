@@ -48,7 +48,7 @@ export interface SystemData {
 }
 function readHostSnapshot(): SystemData | null {
   try {
-    const raw = JSON.parse(readFileSync('/host-run/mydash-host-metrics.json', 'utf-8')) as Record<string, unknown>;
+    const raw = JSON.parse(readFileSync('/host-run/mydash-host-metrics/metrics.json', 'utf-8')) as Record<string, unknown>;
     const updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : 0;
     if (!Number.isFinite(updatedAt) || Date.now() / 1000 - updatedAt > 180) return null;
     const networkRaw = raw.network && typeof raw.network === 'object' ? raw.network as Record<string, unknown> : {};

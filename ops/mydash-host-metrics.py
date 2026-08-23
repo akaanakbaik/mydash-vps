@@ -9,8 +9,8 @@ import tempfile
 import time
 from pathlib import Path
 
-OUTPUT = Path('/run/mydash-host-metrics.json')
-PREVIOUS_NETWORK = Path('/run/mydash-network-previous.json')
+OUTPUT = Path('/run/mydash-host-metrics/metrics.json')
+PREVIOUS_NETWORK = Path('/run/mydash-host-metrics/network-previous.json')
 
 def command(args):
     try:
