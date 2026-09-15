@@ -25,7 +25,7 @@
     &middot;
     <a href="https://t.me/akamodebaik"><strong>Contact Developer</strong></a>
     &middot;
-    <a href="https://akadev.me"><strong>Portfolio</strong></a>
+    <a href="https://akaa.dev"><strong>Portfolio</strong></a>
   </p>
 </div>
 
@@ -37,7 +37,7 @@ My Dash is a modern, self-hosted VPS management dashboard built with Clean Archi
 
 **Developer:** Aka &mdash; Sumatera Barat, Indonesia
 **Contact:** [t.me/akamodebaik](https://t.me/akamodebaik)
-**Portfolio:** [akadev.me](https://akadev.me)
+**Portfolio:** [akaa.dev](https://akaa.dev)
 
 ---
 
@@ -217,7 +217,7 @@ MIT License &mdash; see LICENSE file for details.
     &middot;
     <a href="https://t.me/akamodebaik">Telegram</a>
     &middot;
-    <a href="https://akadev.me">Portfolio</a>
+    <a href="https://akaa.dev">Portfolio</a>
   </p>
   <p>Developer: Aka &mdash; Sumatera Barat, Indonesia</p>
 </div>

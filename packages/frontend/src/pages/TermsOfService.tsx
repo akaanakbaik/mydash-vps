@@ -55,9 +55,9 @@ const sections = [
           <ExternalLink className="h-4 w-4" />
           Telegram: @akamodebaik
         </a>
-        <a href="https://akadev.me" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[hsl(var(--color-primary))] hover:underline">
+        <a href="https://akaa.dev" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-[hsl(var(--color-primary))] hover:underline">
           <ExternalLink className="h-4 w-4" />
-          Portfolio: akadev.me
+          Portfolio: akaa.dev
         </a>
         <p className="text-sm text-[hsl(var(--color-muted))]">
           Developer: Aka - Sumatera Barat, Indonesia

@@ -104,10 +104,10 @@ export function Sidebar({ collapsed }: SidebarProps) {
                 <ExternalLink className="h-3 w-3" />
                 t.me/akamodebaik
               </a>
-              <a href="https://akadev.me" target="_blank" rel="noopener noreferrer"
+              <a href="https://akaa.dev" target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[10px] text-[hsl(var(--color-primary))] hover:underline transition-colors">
                 <ExternalLink className="h-3 w-3" />
-                akadev.me
+                akaa.dev
               </a>
             </div>
           </div>

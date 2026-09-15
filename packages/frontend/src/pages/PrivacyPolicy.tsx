@@ -57,7 +57,7 @@ const sections = [
             <p>Name: Aka</p>
             <p>Origin: Sumatera Barat, Indonesia</p>
             <p>Contact: <a href="https://t.me/akamodebaik" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--color-primary))] hover:underline">t.me/akamodebaik</a></p>
-            <p>Portfolio: <a href="https://akadev.me" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--color-primary))] hover:underline">akadev.me</a></p>
+            <p>Portfolio: <a href="https://akaa.dev" target="_blank" rel="noopener noreferrer" className="text-[hsl(var(--color-primary))] hover:underline">akaa.dev</a></p>
           </div>
         </div>
         <p className="text-xs text-[hsl(var(--color-muted))]">
